@@ -11,7 +11,7 @@ documentation = "https://docs.rs/resilient-rs"
 readme = "README.md"
 keywords = ["retry", "fault-tolerance", "backoff", "resilience", "rust"]
 categories = ["concurrency", "asynchronous", "rust-patterns"]
-authors = ["Your Name <your.email@example.com>"]
+authors = ["semicolon702@gmail.com"]
 exclude = [".github", ".gitignore", "tests/"]
 
 [dependencies]
