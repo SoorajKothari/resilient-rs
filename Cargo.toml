@@ -15,3 +15,8 @@ authors = ["semicolon702@gmail.com"]
 exclude = [".github", ".gitignore", "tests/"]
 
 [dependencies]
+log = "0.4.26"
+tokio = {version = "1.43.0", features = ["time"]}
+
+[dev-dependencies]
+tokio = {version = "1.43.0", features = ["macros", "rt"]}
