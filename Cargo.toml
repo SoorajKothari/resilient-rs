@@ -1,6 +1,6 @@
 [package]
 name = "resilient-rs"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 description = "A Rust utility library for fault tolerance, including retry strategies, backoff mechanisms, and failure handling."
@@ -12,7 +12,7 @@ readme = "README.md"
 keywords = ["retry", "fault-tolerance", "backoff", "resilience", "rust"]
 categories = ["concurrency", "asynchronous", "rust-patterns"]
 authors = ["semicolon702@gmail.com"]
-exclude = [".github", ".gitignore", "tests/"]
+exclude = [".github", ".gitignore"]
 
 [dependencies]
 log = "0.4.26"
