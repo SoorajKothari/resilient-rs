@@ -6,6 +6,9 @@
 <br>
 <a href="https://discord.com/invite/BymX4aJeEQ"><img src="https://img.shields.io/discord/733027681184251937.svg?style=flat&label=Join%20Community&color=7289DA" alt="Join Community Badge"/></a>
 <a href="https://github.com/semicolon-10/resilient-rs/graphs/contributors"><img alt="GitHub contributors" src="https://img.shields.io/github/contributors/semicolon-10/resilient-rs.svg"></a>
+[![Crates.io](https://img.shields.io/crates/v/resilient-rs.svg)](https://crates.io/crates/resilient-rs)
+[![Downloads](https://img.shields.io/crates/d/resilient-rs)](https://crates.io/crates/resilient-rs)
+[![YouTube](https://img.shields.io/badge/YouTube-Semicolon10-red?logo=youtube)](https://www.youtube.com/@Semicolon10)
 <br>
 <br>
 <i>💖 Loved the work? [Subscribe to my YouTube channel](https://www.youtube.com/@Semicolon10) or consider giving this repository a ⭐ to show your support!</i>
@@ -14,13 +17,86 @@
 
 ## Features
 
-| **Type**         | **Feature**           | **Status**              |
-|-------------------|-----------------------|-------------------------|
-| Synchronous       | Retry                | ✅ Stable               |
-| Synchronous       | Retry-with-backoff   | 🚧 Under Development    |
-| Asynchronous      | Retry                | ✅ Stable               |
-| Asynchronous      | Retry-with-backoff   | 🚧 Under Development    |
-| Asynchronous      | Circuit Breaker      | 🛠️ Planned              |
+| **Type**                 | **Feature**        | **Status**              |
+|--------------------------|--------------------|-------------------------|
+| Synchronous              | Retry              | ✅ Stable               |
+| Synchronous              | Retry-with-backoff | 🚧 Under Development    |
+| Asynchronous             | Retry              | ✅ Stable               |
+| Asynchronous             | Retry-with-backoff | 🚧 Under Development    |
+| Asynchronous             | Circuit Breaker    | 🛠️ Planned              |
+| Synchronous/Asynchronous | More Examples      | 🛠️ Planned              |
+
+---
+
+## 📦 How to Use `resilient-rs`
+
+Here’s a quick example of how to use the `resilient-rs` crate in your Rust project.
+
+### 1️⃣ Add `resilient-rs` to Your `Cargo.toml`
+
+Add the following line to your `Cargo.toml` file:
+
+```toml
+[dependencies]
+resilient-rs = "0.1.0" # Replace with the latest version
+```
+
+OR
+
+```bash
+cargo add resilient-rs
+```
+
+#### Synchronous
+```rust
+use std::time::Duration;
+use resilient_rs::config::RetryConfig;
+use resilient_rs::synchronous::retry::retry;
+
+fn main() {
+  let retry_config = RetryConfig::default();
+  let result: Result<i32, &str> = retry(|| {
+    Err("Temporary failure")
+  }, &retry_config);
+  assert!(result.is_err());
+}
+```
+
+#### Asynchronous
+```rust
+use tokio::time::Duration;
+use log::{info, warn};
+
+async fn example_operation() -> Result<&'static str, &'static str> {
+  static mut ATTEMPTS: usize = 0;
+  unsafe {
+    ATTEMPTS += 1;
+    if ATTEMPTS == 3 {
+      Ok("Success")
+    } else {
+      Err("Failure")
+    }
+  }
+}
+
+#[tokio::main]
+async fn main() {
+  use resilient_rs::asynchronous::retry::retry;
+  use resilient_rs::config::RetryConfig;
+
+  let retry_config = RetryConfig {
+    max_attempts: 5,
+    delay: Duration::from_secs(1),
+  };
+
+  let result = retry(example_operation, &retry_config).await;
+  match result {
+    Ok(output) => println!("Operation succeeded: {}", output),
+    Err(err) => println!("Operation failed: {}", err),
+  }
+}
+```
+
 
 ---
 ## 🚀 Contributing Guidelines
