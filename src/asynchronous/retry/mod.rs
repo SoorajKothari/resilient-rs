@@ -2,6 +2,50 @@ use crate::config::RetryConfig;
 use log::{info, warn};
 use tokio::time::sleep;
 
+/// Retries a given asynchronous operation based on the specified retry configuration.
+///
+/// # Arguments
+/// * `operation` - A closure that returns a `Future` resolving to a `Result<T, E>`. The function will retry this operation if it fails.
+/// * `retry_config` - A reference to `RetryConfig` specifying the maximum attempts and delay between retries.
+///
+/// # Returns
+/// * `Ok(T)` if the operation succeeds within the allowed attempts.
+/// * `Err(E)` if the operation fails after all retry attempts.
+///
+/// # Example
+/// ```
+/// use tokio::time::Duration;
+/// use log::{info, warn};
+///
+///
+/// async fn example_operation() -> Result<&'static str, &'static str> {
+///     static mut ATTEMPTS: usize = 0;
+///     unsafe {
+///         ATTEMPTS += 1;
+///         if ATTEMPTS == 3 {
+///             Ok("Success")
+///         } else {
+///             Err("Failure")
+///         }
+///     }
+/// }
+///
+/// #[tokio::main]
+/// async fn main() {
+/// use resilient_rs::asynchronous::retry::retry;
+/// use resilient_rs::config::RetryConfig;
+/// let retry_config = RetryConfig {
+///         max_attempts: 5,
+///         delay: Duration::from_secs(1),
+///     };
+///
+///     let result = retry(example_operation, &retry_config).await;
+///     match result {
+///         Ok(output) => println!("Operation succeeded: {}", output),
+///         Err(err) => println!("Operation failed: {}", err),
+///     }
+/// }
+/// ```
 pub async fn retry<F, Fut, T, E>(mut operation: F, retry_config: &RetryConfig) -> Result<T, E>
 where
     F: FnMut() -> Fut,

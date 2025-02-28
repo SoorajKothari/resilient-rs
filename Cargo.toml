@@ -19,4 +19,4 @@ log = "0.4.26"
 tokio = {version = "1.43.0", features = ["time"]}
 
 [dev-dependencies]
-tokio = {version = "1.43.0", features = ["macros", "rt"]}
+tokio = {version = "1.43.0", features = ["macros", "rt", "rt-multi-thread"]}
