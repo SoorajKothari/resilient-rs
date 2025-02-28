@@ -28,14 +28,14 @@
 We welcome contributions to this project! Please follow these steps to contribute:
 
 ### 🐛 For Issues
-- If you find an issue you'd like to work on, please comment on the issue and tag me (`@Semicolon10`) to assign it to you.  
+- If you find an issue you'd like to work on, please comment on the issue and tag me (`@semicolon-10`) to assign it to you.  
   💡 *Tip*: Make sure the issue is not already assigned to someone else!
 - Once assigned, you can start working on the issue. 🎉
 
 ### 🌟 For Planned Features
 - If you'd like to work on a feature listed in the "Planned" section of the README, first create a new issue for that feature.  
   📝 *Note*: Clearly describe your approach or any details about how you plan to implement the feature.
-- Tag me (`@Semicolon10`) in the issue and request assignment. 🙋‍♂️
+- Tag me (`@semicolon-10`) in the issue and request assignment. 🙋‍♂️
 
 ### 🔧 Submitting Your Work
 1. 🍴 Fork the repository and create a new branch for your work.
@@ -52,6 +52,6 @@ We welcome contributions to this project! Please follow these steps to contribut
 ### 🛠️ Example Workflow
 1. 🔍 Find an issue or planned feature you'd like to work on.
 2. 💬 Comment on the issue or create a new issue for the planned feature.
-3. 🙋 Tag me (`@Semicolon10`) to assign the issue to you.
+3. 🙋 Tag me (`@semicolon-10`) to assign the issue to you.
 4. 🖊️ Work on the issue in your forked repository and submit a pull request.
 ---
