@@ -8,7 +8,7 @@
 <a href="https://github.com/semicolon-10/resilient-rs/graphs/contributors"><img alt="GitHub contributors" src="https://img.shields.io/github/contributors/semicolon-10/resilient-rs.svg"></a>
 <br>
 <br>
-<i>Loved the work? [Subscribe to my youtube channel](https://www.youtube.com/@Semicolon10)</i>
+<i>💖 Loved the work? [Subscribe to my YouTube channel](https://www.youtube.com/@Semicolon10) or consider giving this repository a ⭐ to show your support!</i>
 </div>
 
 
@@ -40,8 +40,9 @@ We welcome contributions to this project! Please follow these steps to contribut
 ### 🔧 Submitting Your Work
 1. 🍴 Fork the repository and create a new branch for your work.
 2. 🛠️ Make your changes and ensure they are well-tested.
-3. 📤 Submit a pull request (PR) with a clear description of the changes you made.
-4. 🔗 Link the issue you worked on in the PR description.
+3. ✅ Make sure all pipelines pass successfully before tagging me for review.
+4. 📤 Submit a pull request (PR) with a clear description of the changes you made.
+5. 🔗 Link the issue you worked on in the PR description.
 
 ### 🤝 Code of Conduct
 - Be respectful and collaborative when interacting with other contributors. 🤗
