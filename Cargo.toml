@@ -15,3 +15,4 @@ authors = ["semicolon702@gmail.com"]
 exclude = [".github", ".gitignore", "tests/"]
 
 [dependencies]
+log = "0.4.26"
