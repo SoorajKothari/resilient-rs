@@ -12,52 +12,45 @@
 </div>
 
 
-<h2 style="font-family: Arial, sans-serif; color: #ecf0f1; text-align: center; background-color: #2c3e50; padding: 10px; border-radius: 8px; margin: 0 auto; width: fit-content;">Features</h2>
-<div style="display: flex; justify-content: center; margin-top: 10px;">
-  <table style="border-collapse: collapse; font-family: Arial, sans-serif; color: #ecf0f1; background-color: #34495e; text-align: left; border-radius: 8px; overflow: hidden; width: auto;">
-    <thead>
-      <tr>
-        <th style="border: 1px solid #2c3e50; padding: 8px; background-color: #1abc9c; font-size: 1em; color: #ffffff; text-align: center;">Type</th>
-        <th style="border: 1px solid #2c3e50; padding: 8px; background-color: #1abc9c; font-size: 1em; color: #ffffff; text-align: center;">Feature</th>
-        <th style="border: 1px solid #2c3e50; padding: 8px; background-color: #1abc9c; font-size: 1em; color: #ffffff; text-align: center;">Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td style="border: 1px solid #2c3e50; padding: 6px; color: #ecf0f1;text-align: center;"><strong>Synchronous</strong></td>
-        <td style="border: 1px solid #2c3e50; padding: 6px; color: #ecf0f1;text-align: center;">Retry</td>
-        <td style="border: 1px solid #2c3e50; padding: 4px; text-align: center;">
-          <span style="background-color: #27ae60; color: white; padding: 2px 6px; border-radius: 4px;">Stable</span>
-        </td>
-      </tr>
-      <tr>
-        <td style="border: 1px solid #2c3e50; padding: 6px; color: #ecf0f1;text-align: center;"><strong>Synchronous</strong></td>
-        <td style="border: 1px solid #2c3e50; padding: 6px; color: #ecf0f1;text-align: center;">Retry-with-backoff</td>
-        <td style="border: 1px solid #2c3e50; padding: 4px; text-align: center;">
-          <span style="background-color: #f39c12; color: white; padding: 2px 6px; border-radius: 4px;">Under Development</span>
-        </td>
-      </tr>
-      <tr>
-        <td style="border: 1px solid #2c3e50; padding: 6px; color: #ecf0f1;text-align: center;"><strong>Asynchronous</strong></td>
-        <td style="border: 1px solid #2c3e50; padding: 6px; color: #ecf0f1;text-align: center;">Retry</td>
-        <td style="border: 1px solid #2c3e50; padding: 4px; text-align: center;">
-          <span style="background-color: #27ae60; color: white; padding: 2px 6px; border-radius: 4px;">Stable</span>
-        </td>
-      </tr>
-      <tr>
-        <td style="border: 1px solid #2c3e50; padding: 6px; color: #ecf0f1;text-align: center;"><strong>Asynchronous</strong></td>
-        <td style="border: 1px solid #2c3e50; padding: 6px; color: #ecf0f1;text-align: center;">Retry-with-backoff</td>
-        <td style="border: 1px solid #2c3e50; padding: 4px; text-align: center;">
-          <span style="background-color: #f39c12; color: white; padding: 2px 6px; border-radius: 4px;">Under Development</span>
-        </td>
-      </tr>
-      <tr>
-        <td style="border: 1px solid #2c3e50; padding: 6px; color: #ecf0f1; text-align: center;"><strong>Asynchronous</strong></td>
-        <td style="border: 1px solid #2c3e50; padding: 6px; color: #ecf0f1; text-align: center;">Circuit Breaker</td>
-        <td style="border: 1px solid #2c3e50; padding: 4px; text-align: center;">
-          <span style="background-color: #e74c3c; color: white; padding: 2px 6px; border-radius: 4px;">Planned</span>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+## Features
+
+| **Type**         | **Feature**           | **Status**              |
+|-------------------|-----------------------|-------------------------|
+| Synchronous       | Retry                | ✅ Stable               |
+| Synchronous       | Retry-with-backoff   | 🚧 Under Development    |
+| Asynchronous      | Retry                | ✅ Stable               |
+| Asynchronous      | Retry-with-backoff   | 🚧 Under Development    |
+| Asynchronous      | Circuit Breaker      | 🛠️ Planned              |
+
+---
+## 🚀 Contributing Guidelines
+
+We welcome contributions to this project! Please follow these steps to contribute:
+
+### 🐛 For Issues
+- If you find an issue you'd like to work on, please comment on the issue and tag me (`@Semicolon10`) to assign it to you.  
+  💡 *Tip*: Make sure the issue is not already assigned to someone else!
+- Once assigned, you can start working on the issue. 🎉
+
+### 🌟 For Planned Features
+- If you'd like to work on a feature listed in the "Planned" section of the README, first create a new issue for that feature.  
+  📝 *Note*: Clearly describe your approach or any details about how you plan to implement the feature.
+- Tag me (`@Semicolon10`) in the issue and request assignment. 🙋‍♂️
+
+### 🔧 Submitting Your Work
+1. 🍴 Fork the repository and create a new branch for your work.
+2. 🛠️ Make your changes and ensure they are well-tested.
+3. 📤 Submit a pull request (PR) with a clear description of the changes you made.
+4. 🔗 Link the issue you worked on in the PR description.
+
+### 🤝 Code of Conduct
+- Be respectful and collaborative when interacting with other contributors. 🤗
+- Ensure your code follows the project's coding standards and guidelines. ✅
+
+
+### 🛠️ Example Workflow
+1. 🔍 Find an issue or planned feature you'd like to work on.
+2. 💬 Comment on the issue or create a new issue for the planned feature.
+3. 🙋 Tag me (`@Semicolon10`) to assign the issue to you.
+4. 🖊️ Work on the issue in your forked repository and submit a pull request.
+---
