@@ -17,21 +17,17 @@ use std::thread::sleep;
 /// # Example
 ///
 /// ```
-/// use std::time::Duration;
-/// use std::sync::atomic::{AtomicUsize, Ordering};
-///
-///
-/// fn main() {
 /// use resilient_rs::config::RetryConfig;
 /// use resilient_rs::synchronous::retry_with_backoff::retry_with_exponential_backoff;
-/// let retry_config = RetryConfig::default();
 ///
-///     let attempt_count = AtomicUsize::new(0);
+/// fn main() {
+/// let retry_config = RetryConfig::default();
+///     let mut attempts = 0;
 ///
 ///     let result = retry_with_exponential_backoff(
 ///         || {
-///             let attempt = attempt_count.fetch_add(1, Ordering::SeqCst);
-///             if attempt < 3 {
+///             attempts += 1;
+///             if attempts < 3 {
 ///                 Err("Temporary failure")
 ///             } else {
 ///                 Ok("Success")
@@ -40,10 +36,7 @@ use std::thread::sleep;
 ///         &retry_config,
 ///     );
 ///
-///     match result {
-///         Ok(msg) => println!("Operation succeeded: {}", msg),
-///         Err(err) => println!("Operation failed: {}", err),
-///     }
+///     println!("{:?}", result);
 /// }
 /// ```
 ///

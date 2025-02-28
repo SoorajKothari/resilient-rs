@@ -20,7 +20,7 @@
 | **Type**                 | **Feature**        | **Status**              |
 |--------------------------|--------------------|-------------------------|
 | Synchronous              | Retry              | ✅ Stable               |
-| Synchronous              | Retry-with-backoff | 🚧 Under Development    |
+| Synchronous              | Retry-with-backoff | ✅ Stable    |
 | Asynchronous             | Retry              | ✅ Stable               |
 | Asynchronous             | Retry-with-backoff | 🚧 Under Development    |
 | Asynchronous             | Circuit Breaker    | 🛠️ Planned              |
@@ -38,7 +38,7 @@ Add the following line to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-resilient-rs = "0.1.0" # Replace with the latest version
+resilient-rs = "0.2.0" # Replace with the latest version
 ```
 
 OR
