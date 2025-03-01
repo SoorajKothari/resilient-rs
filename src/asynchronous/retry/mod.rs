@@ -15,37 +15,32 @@ use tokio::time::sleep;
 /// # Example
 /// ```
 /// use tokio::time::Duration;
-/// use log::{info, warn};
+/// use reqwest::Client;
+/// use resilient_rs::asynchronous::retry::retry;
+/// use resilient_rs::config::RetryConfig;
 ///
-///
-/// async fn example_operation() -> Result<&'static str, &'static str> {
-///     static mut ATTEMPTS: usize = 0;
-///     unsafe {
-///         ATTEMPTS += 1;
-///         if ATTEMPTS == 3 {
-///             Ok("Success")
-///         } else {
-///             Err("Failure")
-///         }
-///     }
+/// async fn fetch_url() -> Result<String, reqwest::Error> {
+///   use std::fmt::Error;
+/// let client = Client::new();
+///   let response = client.get("https://example.com")
+///           .send()
+///           .await?;
+///     Ok(response.status().is_success().to_string())
 /// }
 ///
 /// #[tokio::main]
 /// async fn main() {
-/// use resilient_rs::asynchronous::retry::retry;
-/// use resilient_rs::config::RetryConfig;
-/// let retry_config = RetryConfig {
-///         max_attempts: 5,
-///         delay: Duration::from_secs(1),
-///     };
+///   let retry_config = RetryConfig::default();
 ///
-///     let result = retry(example_operation, &retry_config).await;
-///     match result {
-///         Ok(output) => println!("Operation succeeded: {}", output),
-///         Err(err) => println!("Operation failed: {}", err),
-///     }
+///   let result = retry(fetch_url, &retry_config).await;
+///   match result {
+///     Ok(output) => println!("Operation succeeded: {}", output),
+///     Err(err) => println!("Operation failed: {}", err),
+///   }
 /// }
 /// ```
+/// # Notes
+/// - The function logs warnings for failed attempts and final failure.
 pub async fn retry<F, Fut, T, E>(mut operation: F, retry_config: &RetryConfig) -> Result<T, E>
 where
     F: FnMut() -> Fut,

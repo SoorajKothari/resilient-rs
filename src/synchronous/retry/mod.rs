@@ -24,6 +24,8 @@ use std::thread::sleep;
 /// }, &retry_config);
 /// assert!(result.is_err()); // Should be Error after 3 attempts
 /// ```
+/// # Notes
+/// - The function logs warnings for failed attempts and final failure.
 pub fn retry<F, T, E>(mut operation: F, retry_config: &RetryConfig) -> Result<T, E>
 where
     F: FnMut() -> Result<T, E>,

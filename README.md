@@ -8,23 +8,29 @@
 <a href="https://github.com/semicolon-10/resilient-rs/graphs/contributors"><img alt="GitHub contributors" src="https://img.shields.io/github/contributors/semicolon-10/resilient-rs.svg"></a>
 [![Crates.io](https://img.shields.io/crates/v/resilient-rs.svg)](https://crates.io/crates/resilient-rs)
 [![Downloads](https://img.shields.io/crates/d/resilient-rs)](https://crates.io/crates/resilient-rs)
-[![YouTube](https://img.shields.io/badge/YouTube-Semicolon10-red?logo=youtube)](https://www.youtube.com/@Semicolon10)
+[![Docs.rs](https://docs.rs/resilient-rs/badge.svg)](https://docs.rs/resilient-rs/latest/resilient_rs/)
 <br>
 <br>
 <i>💖 Loved the work? [Subscribe to my YouTube channel](https://www.youtube.com/@Semicolon10) or consider giving this repository a ⭐ to show your support!</i>
 </div>
 
 
-## Features
+## Feature Overview
 
-| **Type**                 | **Feature**        | **Status**              |
-|--------------------------|--------------------|-------------------------|
-| Synchronous              | Retry              | ✅ Stable               |
-| Synchronous              | Retry-with-backoff | ✅ Stable    |
-| Asynchronous             | Retry              | ✅ Stable               |
-| Asynchronous             | Retry-with-backoff | 🚧 Under Development    |
-| Asynchronous             | Circuit Breaker    | 🛠️ Planned              |
-| Synchronous/Asynchronous | More Examples      | 🛠️ Planned              |
+### Synchronous Features
+- ✅ Retry – Stable  
+- ✅ Retry with Backoff – Stable
+- 🛠️ Retry with fallback - Planned
+
+### Asynchronous Features
+- ✅ Retry – Stable  
+- ✅ Retry with Backoff – Stable  
+- 🛠️ Circuit Breaker – Planned
+- 🛠️ Retry with fallback - Planned
+
+### General
+- ✅ Logging
+- 🛠️ More Examples – Planned
 
 ---
 
@@ -38,7 +44,7 @@ Add the following line to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-resilient-rs = "0.2.0" # Replace with the latest version
+resilient-rs = "0.2.1" # Replace with the latest version
 ```
 
 OR
@@ -65,31 +71,28 @@ fn main() {
 #### Asynchronous
 ```rust
 use tokio::time::Duration;
-use log::{info, warn};
+use reqwest::Client;
+use resilient_rs::asynchronous::retry::retry;
+use resilient_rs::config::RetryConfig;
 
-async fn example_operation() -> Result<&'static str, &'static str> {
-  static mut ATTEMPTS: usize = 0;
-  unsafe {
-    ATTEMPTS += 1;
-    if ATTEMPTS == 3 {
-      Ok("Success")
-    } else {
-      Err("Failure")
-    }
+async fn fetch_url() -> Result<String, reqwest::Error> {
+  let client = Client::new();
+  let response = client.get("https://example.com")
+          .send()
+          .await?;
+
+  if response.status().is_success() {
+    response.text().await
+  } else {
+    Err(reqwest::Error::new(reqwest::StatusCode::from_u16(response.status().as_u16()).unwrap(), "Request failed"))
   }
 }
 
 #[tokio::main]
 async fn main() {
-  use resilient_rs::asynchronous::retry::retry;
-  use resilient_rs::config::RetryConfig;
+  let retry_config = RetryConfig::default();
 
-  let retry_config = RetryConfig {
-    max_attempts: 5,
-    delay: Duration::from_secs(1),
-  };
-
-  let result = retry(example_operation, &retry_config).await;
+  let result = retry(fetch_url, &retry_config).await;
   match result {
     Ok(output) => println!("Operation succeeded: {}", output),
     Err(err) => println!("Operation failed: {}", err),
@@ -97,37 +100,24 @@ async fn main() {
 }
 ```
 
-
 ---
 ## 🚀 Contributing Guidelines
 
-We welcome contributions to this project! Please follow these steps to contribute:
+We welcome your contributions! Here's how to get started:
 
-### 🐛 For Issues
-- If you find an issue you'd like to work on, please comment on the issue and tag me (`@semicolon-10`) to assign it to you.  
-  💡 *Tip*: Make sure the issue is not already assigned to someone else!
-- Once assigned, you can start working on the issue. 🎉
+### 🐛 Issues & 🌟 Features
+- Find an issue or planned feature you'd like to work on.
+- Comment on the issue (or create one for planned features) and tag me (`@semicolon-10`) for assignment.  
+  💡 *Tip*: Ensure it's not already assigned!
+- Once assigned, start working. 🎉
 
-### 🌟 For Planned Features
-- If you'd like to work on a feature listed in the "Planned" section of the README, first create a new issue for that feature.  
-  📝 *Note*: Clearly describe your approach or any details about how you plan to implement the feature.
-- Tag me (`@semicolon-10`) in the issue and request assignment. 🙋‍♂️
-
-### 🔧 Submitting Your Work
-1. 🍴 Fork the repository and create a new branch for your work.
-2. 🛠️ Make your changes and ensure they are well-tested.
-3. ✅ Make sure all pipelines pass successfully before tagging me for review.
-4. 📤 Submit a pull request (PR) with a clear description of the changes you made.
-5. 🔗 Link the issue you worked on in the PR description.
+### 🔧 Submitting Work
+1. 🍴 Fork the repo and create a new branch.
+2. 🛠️ Make changes and test thoroughly.
+3. ✅ Ensure git actions pass before tagging me for review.
+4. 📤 Submit a PR with a clear description and link the issue.
 
 ### 🤝 Code of Conduct
-- Be respectful and collaborative when interacting with other contributors. 🤗
-- Ensure your code follows the project's coding standards and guidelines. ✅
-
-
-### 🛠️ Example Workflow
-1. 🔍 Find an issue or planned feature you'd like to work on.
-2. 💬 Comment on the issue or create a new issue for the planned feature.
-3. 🙋 Tag me (`@semicolon-10`) to assign the issue to you.
-4. 🖊️ Work on the issue in your forked repository and submit a pull request.
+- Be respectful and collaborative. 🤗
+- Follow coding standards and guidelines. ✅
 ---

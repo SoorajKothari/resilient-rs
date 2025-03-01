@@ -1,6 +1,6 @@
 [package]
 name = "resilient-rs"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 
 description = "A Rust utility library for fault tolerance, including retry strategies, backoff mechanisms, and failure handling."
@@ -20,3 +20,4 @@ tokio = {version = "1.43.0", features = ["time"]}
 
 [dev-dependencies]
 tokio = {version = "1.43.0", features = ["macros", "rt", "rt-multi-thread"]}
+reqwest = {version = "0.12.12", features = ["json"]}
