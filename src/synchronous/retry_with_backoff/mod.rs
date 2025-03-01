@@ -42,7 +42,9 @@ use std::thread::sleep;
 ///
 /// This example simulates an operation that fails three times before succeeding.
 /// The function retries using an exponential backoff strategy.
-
+/// # Notes
+/// - The delay is multiplied by 2 after each failed attempt.
+/// - The function logs warnings for failed attempts and final failure.
 pub fn retry_with_exponential_backoff<F, T, E>(
     mut operation: F,
     retry_config: &RetryConfig,
