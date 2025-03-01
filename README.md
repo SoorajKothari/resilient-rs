@@ -44,7 +44,7 @@ Add the following line to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-resilient-rs = "0.2.1" # Replace with the latest version
+resilient-rs = "0.3.0" # Replace with the latest version
 ```
 
 OR
@@ -57,7 +57,7 @@ cargo add resilient-rs
 ```rust
 use std::time::Duration;
 use resilient_rs::config::RetryConfig;
-use resilient_rs::synchronous::retry::retry;
+use resilient_rs::synchronous::retry;
 
 fn main() {
   let retry_config = RetryConfig::default();
@@ -72,7 +72,7 @@ fn main() {
 ```rust
 use tokio::time::Duration;
 use reqwest::Client;
-use resilient_rs::asynchronous::retry::retry;
+use resilient_rs::asynchronous::retry;
 use resilient_rs::config::RetryConfig;
 
 async fn fetch_url() -> Result<String, reqwest::Error> {
