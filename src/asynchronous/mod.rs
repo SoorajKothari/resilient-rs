@@ -245,11 +245,8 @@ mod tests {
         assert_eq!(*attempts.lock().unwrap(), config.max_attempts);
     }
 
-    #[derive(Debug, PartialEq, Eq)]
-    struct DummyError(&'static str);
-
     #[tokio::test]
-    async fn test_retry_success_first_try() {
+    async fn test_retry_with_exponential_backoff_success_first_try() {
         let config = RetryConfig::default();
 
         let attempts = Arc::new(Mutex::new(0));
@@ -270,7 +267,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_retry_success_after_failures() {
+    async fn test_retry_with_exponential_backoff_success_after_failures() {
         let config = RetryConfig {
             max_attempts: 5,
             delay: Duration::from_millis(10),
@@ -298,7 +295,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_retry_failure_all_attempts() {
+    async fn test_retry_with_exponential_backoff_failure_all_attempts() {
         let config = RetryConfig {
             max_attempts: 3,
             delay: Duration::from_millis(10),
