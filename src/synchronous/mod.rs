@@ -18,7 +18,7 @@ use std::thread::sleep;
 /// use resilient_rs::config::RetryConfig;
 /// use resilient_rs::synchronous::retry;
 ///
-/// let retry_config = RetryConfig { max_attempts: 3, delay: Duration::from_millis(500) };
+/// let retry_config = RetryConfig { max_attempts: 3, delay: Duration::from_millis(500), should_retry: None };
 /// let result: Result<i32, &str> = retry(|| {
 ///     Err("Temporary failure") // Always fails in this example
 /// }, &retry_config);
@@ -26,7 +26,7 @@ use std::thread::sleep;
 /// ```
 /// # Notes
 /// - The function logs warnings for failed attempts and final failure.
-pub fn retry<F, T, E>(mut operation: F, retry_config: &RetryConfig) -> Result<T, E>
+pub fn retry<F, T, E>(mut operation: F, retry_config: &RetryConfig<E>) -> Result<T, E>
 where
     F: FnMut() -> Result<T, E>,
 {
@@ -38,14 +38,24 @@ where
                 info!("Operation succeeded after {} attempts", attempts + 1);
                 return Ok(output);
             }
-            Err(_) if attempts + 1 < retry_config.max_attempts => {
-                warn!(
-                    "Operation failed (attempt {}/{}), retrying after {:?}...",
-                    attempts + 1,
-                    retry_config.max_attempts,
-                    retry_config.delay
-                );
-                sleep(retry_config.delay);
+            Err(err) if attempts + 1 < retry_config.max_attempts => {
+                let should_retry = retry_config.should_retry.map_or(true, |f| f(&err));
+                if should_retry {
+                    warn!(
+                        "Operation failed (attempt {}/{}), retrying after {:?}...",
+                        attempts + 1,
+                        retry_config.max_attempts,
+                        retry_config.delay
+                    );
+                    sleep(retry_config.delay);
+                } else {
+                    warn!(
+                        "Operation failed (attempt {}/{}), not retryable, giving up.",
+                        attempts + 1,
+                        retry_config.max_attempts
+                    );
+                    return Err(err);
+                }
             }
             Err(err) => {
                 warn!(
@@ -105,7 +115,7 @@ where
 /// - The function logs warnings for failed attempts and final failure.
 pub fn retry_with_exponential_backoff<F, T, E>(
     mut operation: F,
-    retry_config: &RetryConfig,
+    retry_config: &RetryConfig<E>,
 ) -> Result<T, E>
 where
     F: FnMut() -> Result<T, E>,
@@ -119,15 +129,26 @@ where
                 info!("Operation succeeded after {} attempts", attempts + 1);
                 return Ok(output);
             }
-            Err(_) if attempts + 1 < retry_config.max_attempts => {
-                warn!(
-                    "Operation failed (attempt {}/{}), retrying after {:?}...",
-                    attempts + 1,
-                    retry_config.max_attempts,
-                    delay
-                );
-                sleep(delay);
-                delay *= 2;
+            Err(err) if attempts + 1 < retry_config.max_attempts => {
+                let should_retry = retry_config.should_retry.map_or(true, |f| f(&err));
+
+                if should_retry {
+                    warn!(
+                        "Operation failed (attempt {}/{}), retrying after {:?}...",
+                        attempts + 1,
+                        retry_config.max_attempts,
+                        delay
+                    );
+                    sleep(delay);
+                    delay *= 2;
+                } else {
+                    warn!(
+                        "Operation failed (attempt {}/{}), not retryable, giving up.",
+                        attempts + 1,
+                        retry_config.max_attempts
+                    );
+                    return Err(err);
+                }
             }
             Err(err) => {
                 warn!(
@@ -145,6 +166,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::RefCell;
     use std::fmt::Error;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::Duration;
@@ -154,6 +176,7 @@ mod tests {
         let retry_config = RetryConfig {
             max_attempts: 3,
             delay: Duration::from_millis(10),
+            should_retry: None,
         };
 
         let mut attempts = 0;
@@ -178,6 +201,7 @@ mod tests {
         let retry_config = RetryConfig {
             max_attempts: 3,
             delay: Duration::from_millis(10),
+            should_retry: None,
         };
 
         let attempts = AtomicUsize::new(0);
@@ -213,6 +237,7 @@ mod tests {
         let retry_config = RetryConfig {
             max_attempts: 5,
             delay: Duration::from_millis(10),
+            should_retry: None,
         };
 
         let result = retry(succeed_on_third_attempt, &retry_config);
@@ -227,6 +252,7 @@ mod tests {
         let retry_config = RetryConfig {
             max_attempts: 3,
             delay: Duration::from_millis(100),
+            should_retry: None,
         };
 
         let result: Result<i32, Error> = retry_with_exponential_backoff(|| Ok(60), &retry_config);
@@ -238,6 +264,7 @@ mod tests {
         let retry_config = RetryConfig {
             max_attempts: 5,
             delay: Duration::from_millis(100),
+            should_retry: None,
         };
 
         static ATTEMPTS: AtomicUsize = AtomicUsize::new(0);
@@ -262,6 +289,7 @@ mod tests {
         let retry_config = RetryConfig {
             max_attempts: 3,
             delay: Duration::from_millis(100),
+            should_retry: None,
         };
 
         static ATTEMPTS: AtomicUsize = AtomicUsize::new(0);
@@ -276,5 +304,74 @@ mod tests {
 
         assert_eq!(result, Err("Permanent failure"));
         assert_eq!(ATTEMPTS.load(Ordering::SeqCst), 3);
+    }
+
+    #[test]
+    fn test_retry_with_should_retry_success() {
+        let attempts = RefCell::new(0);
+        let config = RetryConfig::new(3, Duration::from_millis(1))
+            .with_should_retry(|e: &String| e.contains("transient"));
+
+        let result = retry(
+            || {
+                let mut attempts = attempts.borrow_mut();
+                *attempts += 1;
+                if *attempts < 2 {
+                    Err("transient error".to_string())
+                } else {
+                    Ok("success".to_string())
+                }
+            },
+            &config,
+        );
+
+        assert_eq!(result, Ok("success".to_string()));
+        assert_eq!(*attempts.borrow(), 2);
+    }
+
+    #[test]
+    fn test_retry_with_should_not_retry_if_error() {
+        let attempts = RefCell::new(0);
+        let config = RetryConfig::new(3, Duration::from_millis(1))
+            .with_should_retry(|e: &String| e.contains("500"));
+
+        let result = retry(
+            || {
+                let mut attempts = attempts.borrow_mut();
+                *attempts += 1;
+                if *attempts < 2 {
+                    Err("403".to_string())
+                } else {
+                    Ok("success".to_string())
+                }
+            },
+            &config,
+        );
+
+        assert_eq!(result, Err("403".to_string()));
+        assert_eq!(*attempts.borrow(), 1);
+    }
+
+    #[test]
+    fn test_retry_with_backoff_should_not_retry_after_1_attempt() {
+        let attempts = RefCell::new(0);
+        let config = RetryConfig::new(5, Duration::from_millis(1))
+            .with_should_retry(|e: &String| e.contains("transient"));
+
+        let result = retry_with_exponential_backoff(
+            || {
+                let mut attempts = attempts.borrow_mut();
+                *attempts += 1;
+                if *attempts < 3 {
+                    Err("401".to_string())
+                } else {
+                    Ok("success".to_string())
+                }
+            },
+            &config,
+        );
+
+        assert_eq!(result, Err("401".to_string()));
+        assert_eq!(*attempts.borrow(), 1);
     }
 }

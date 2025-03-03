@@ -41,7 +41,7 @@ use tokio::time::sleep;
 /// ```
 /// # Notes
 /// - The function logs warnings for failed attempts and final failure.
-pub async fn retry<F, Fut, T, E>(mut operation: F, retry_config: &RetryConfig) -> Result<T, E>
+pub async fn retry<F, Fut, T, E>(mut operation: F, retry_config: &RetryConfig<E>) -> Result<T, E>
 where
     F: FnMut() -> Fut,
     Fut: Future<Output = Result<T, E>>,
@@ -122,7 +122,7 @@ where
 /// - The function logs warnings for failed attempts and final failure.
 pub async fn retry_with_exponential_backoff<F, Fut, T, E>(
     mut operation: F,
-    retry_config: &RetryConfig,
+    retry_config: &RetryConfig<E>,
 ) -> Result<T, E>
 where
     F: FnMut() -> Fut,
@@ -174,6 +174,7 @@ mod tests {
         let config = RetryConfig {
             max_attempts: 3,
             delay: Duration::from_millis(10),
+            should_retry: None,
         };
 
         let attempts = Arc::new(Mutex::new(0));
@@ -198,6 +199,7 @@ mod tests {
         let config = RetryConfig {
             max_attempts: 5,
             delay: Duration::from_millis(10),
+            should_retry: None,
         };
 
         let attempts = Arc::new(Mutex::new(0));
@@ -226,6 +228,7 @@ mod tests {
         let config = RetryConfig {
             max_attempts: 3,
             delay: Duration::from_millis(10),
+            should_retry: None,
         };
 
         let attempts = Arc::new(Mutex::new(0));
@@ -271,6 +274,7 @@ mod tests {
         let config = RetryConfig {
             max_attempts: 5,
             delay: Duration::from_millis(10),
+            should_retry: None,
         };
 
         let attempts = Arc::new(Mutex::new(0));
@@ -299,6 +303,7 @@ mod tests {
         let config = RetryConfig {
             max_attempts: 3,
             delay: Duration::from_millis(10),
+            should_retry: None,
         };
 
         let attempts = Arc::new(Mutex::new(0));
