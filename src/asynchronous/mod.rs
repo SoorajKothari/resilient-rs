@@ -41,7 +41,7 @@ use tokio::time::sleep;
 /// ```
 /// # Notes
 /// - The function logs warnings for failed attempts and final failure.
-pub async fn retry<F, Fut, T, E>(mut operation: F, retry_config: &RetryConfig) -> Result<T, E>
+pub async fn retry<F, Fut, T, E>(mut operation: F, retry_config: &RetryConfig<E>) -> Result<T, E>
 where
     F: FnMut() -> Fut,
     Fut: Future<Output = Result<T, E>>,
@@ -54,14 +54,24 @@ where
                 info!("Operation succeeded after {} attempts", attempts + 1);
                 return Ok(output);
             }
-            Err(_) if attempts + 1 < retry_config.max_attempts => {
-                warn!(
-                    "Operation failed (attempt {}/{}), retrying after {:?}...",
-                    attempts + 1,
-                    retry_config.max_attempts,
-                    retry_config.delay
-                );
-                sleep(retry_config.delay).await;
+            Err(err) if attempts + 1 < retry_config.max_attempts => {
+                let should_retry = retry_config.retry_condition.map_or(true, |f| f(&err));
+                if should_retry {
+                    warn!(
+                        "Operation failed (attempt {}/{}), retrying after {:?}...",
+                        attempts + 1,
+                        retry_config.max_attempts,
+                        retry_config.delay
+                    );
+                    sleep(retry_config.delay).await;
+                } else {
+                    warn!(
+                        "Operation failed (attempt {}/{}), not retryable, giving up.",
+                        attempts + 1,
+                        retry_config.max_attempts
+                    );
+                    return Err(err);
+                }
             }
             Err(err) => {
                 warn!(
@@ -122,7 +132,7 @@ where
 /// - The function logs warnings for failed attempts and final failure.
 pub async fn retry_with_exponential_backoff<F, Fut, T, E>(
     mut operation: F,
-    retry_config: &RetryConfig,
+    retry_config: &RetryConfig<E>,
 ) -> Result<T, E>
 where
     F: FnMut() -> Fut,
@@ -137,15 +147,25 @@ where
                 info!("Operation succeeded after {} attempts", attempts + 1);
                 return Ok(output);
             }
-            Err(_) if attempts + 1 < retry_config.max_attempts => {
-                warn!(
-                    "Operation failed (attempt {}/{}), retrying after {:?}...",
-                    attempts + 1,
-                    retry_config.max_attempts,
-                    delay
-                );
-                sleep(delay).await;
-                delay *= 2;
+            Err(err) if attempts + 1 < retry_config.max_attempts => {
+                let should_retry = retry_config.retry_condition.map_or(true, |f| f(&err));
+                if should_retry {
+                    warn!(
+                        "Operation failed (attempt {}/{}), retrying after {:?}...",
+                        attempts + 1,
+                        retry_config.max_attempts,
+                        delay
+                    );
+                    sleep(delay).await;
+                    delay *= 2;
+                } else {
+                    warn!(
+                        "Operation failed (attempt {}/{}), not retryable, giving up.",
+                        attempts + 1,
+                        retry_config.max_attempts
+                    );
+                    return Err(err);
+                }
             }
             Err(err) => {
                 warn!(
@@ -174,6 +194,7 @@ mod tests {
         let config = RetryConfig {
             max_attempts: 3,
             delay: Duration::from_millis(10),
+            retry_condition: None,
         };
 
         let attempts = Arc::new(Mutex::new(0));
@@ -198,6 +219,7 @@ mod tests {
         let config = RetryConfig {
             max_attempts: 5,
             delay: Duration::from_millis(10),
+            retry_condition: None,
         };
 
         let attempts = Arc::new(Mutex::new(0));
@@ -226,6 +248,7 @@ mod tests {
         let config = RetryConfig {
             max_attempts: 3,
             delay: Duration::from_millis(10),
+            retry_condition: None,
         };
 
         let attempts = Arc::new(Mutex::new(0));
@@ -271,6 +294,7 @@ mod tests {
         let config = RetryConfig {
             max_attempts: 5,
             delay: Duration::from_millis(10),
+            retry_condition: None,
         };
 
         let attempts = Arc::new(Mutex::new(0));
@@ -299,6 +323,7 @@ mod tests {
         let config = RetryConfig {
             max_attempts: 3,
             delay: Duration::from_millis(10),
+            retry_condition: None,
         };
 
         let attempts = Arc::new(Mutex::new(0));
@@ -317,5 +342,84 @@ mod tests {
             retry_with_exponential_backoff(operation, &config).await;
         assert_eq!(result, Err(DummyError("always fail")));
         assert_eq!(*attempts.lock().unwrap(), config.max_attempts);
+    }
+
+    #[tokio::test]
+    async fn test_retry_fail_first_try_retry_condition_un_match() {
+        let config = RetryConfig {
+            max_attempts: 3,
+            delay: Duration::from_millis(10),
+            retry_condition: Some(|e: &DummyError| e.0.contains("transient")),
+        };
+
+        let attempts = Arc::new(Mutex::new(0));
+
+        let op_attempts = attempts.clone();
+        let operation = move || {
+            let op_attempts = op_attempts.clone();
+            async move {
+                let mut count = op_attempts.lock().unwrap();
+                *count += 1;
+                Err(DummyError("always fail"))
+            }
+        };
+
+        let result: Result<(), DummyError> = retry(operation, &config).await;
+        assert_eq!(result, Err(DummyError("always fail")));
+        assert_eq!(*attempts.lock().unwrap(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_retry_fail_first_try_retry_condition_match() {
+        let config = RetryConfig {
+            max_attempts: 3,
+            delay: Duration::from_millis(10),
+            retry_condition: Some(|e: &DummyError| e.0.contains("transient")),
+        };
+
+        let attempts = Arc::new(Mutex::new(0));
+
+        let op_attempts = attempts.clone();
+        let operation = move || {
+            let op_attempts = op_attempts.clone();
+            async move {
+                let mut count = op_attempts.lock().unwrap();
+                *count += 1;
+                Err(DummyError("transient"))
+            }
+        };
+
+        let result: Result<(), DummyError> = retry(operation, &config).await;
+        assert_eq!(result, Err(DummyError("transient")));
+        assert_eq!(*attempts.lock().unwrap(), 3);
+    }
+
+    #[tokio::test]
+    async fn test_retry_with_exponential_backoff_success_after_failures_with_condition() {
+        let config = RetryConfig {
+            max_attempts: 5,
+            delay: Duration::from_millis(10),
+            retry_condition: Some(|e: &DummyError| e.0.contains("405")),
+        };
+
+        let attempts = Arc::new(Mutex::new(0));
+
+        let op_attempts = attempts.clone();
+        let operation = move || {
+            let op_attempts = op_attempts.clone();
+            async move {
+                let mut count = op_attempts.lock().unwrap();
+                *count += 1;
+                if *count < 2 {
+                    Err(DummyError("temporary fail"))
+                } else {
+                    Ok("eventual success")
+                }
+            }
+        };
+
+        let result = retry_with_exponential_backoff(operation, &config).await;
+        assert_eq!(result, Err(DummyError("temporary fail")));
+        assert_eq!(*attempts.lock().unwrap(), 1);
     }
 }

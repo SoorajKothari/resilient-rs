@@ -20,11 +20,15 @@
 ### Synchronous Features
 - ✅ Retry – Stable  
 - ✅ Retry with Backoff – Stable
+- ✅ Retry with Custom Conditions – Stable
+- ✅ Retry with Backoff & Custom Conditions  – Stable
 - 🛠️ Retry with fallback - Planned
 
 ### Asynchronous Features
 - ✅ Retry – Stable  
 - ✅ Retry with Backoff – Stable  
+- ✅ Retry with Custom Conditions – Stable
+- ✅ Retry with Backoff & Custom Conditions  – Stable
 - 🛠️ Circuit Breaker – Planned
 - 🛠️ Retry with fallback - Planned
 
@@ -44,7 +48,7 @@ Add the following line to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-resilient-rs = "0.3.0" # Replace with the latest version
+resilient-rs = "0.4.0" # Replace with the latest version
 ```
 
 OR
