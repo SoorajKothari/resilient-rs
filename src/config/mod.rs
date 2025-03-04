@@ -37,11 +37,11 @@ pub struct RetryConfig<E> {
     /// let config = RetryConfig {
     ///     max_attempts: 3,
     ///     delay: Duration::from_secs(1),
-    ///     should_retry: Some(|e: &String| e.contains("transient")),
+    ///     retry_condition: Some(|e: &String| e.contains("transient")),
     /// };
     /// ```
     /// In this example, only errors containing the word "transient" will trigger retries.
-    pub should_retry: Option<fn(&E) -> bool>,
+    pub retry_condition: Option<fn(&E) -> bool>,
 }
 
 impl<E> Default for RetryConfig<E> {
@@ -58,7 +58,7 @@ impl<E> Default for RetryConfig<E> {
         RetryConfig {
             max_attempts: 3,
             delay: Duration::from_secs(2),
-            should_retry: None,
+            retry_condition: None,
         }
     }
 }
@@ -86,7 +86,7 @@ impl<E> RetryConfig<E> {
         RetryConfig {
             max_attempts,
             delay,
-            should_retry: None,
+            retry_condition: None,
         }
     }
 
@@ -109,10 +109,10 @@ impl<E> RetryConfig<E> {
     /// use std::time::Duration;
     /// use resilient_rs::config::RetryConfig;
     /// let config = RetryConfig::new(3, Duration::from_secs(1))
-    ///     .with_should_retry(|e: &String| e.contains("transient"));
+    ///     .with_retry_condition(|e: &String| e.contains("transient"));
     /// ```
-    pub fn with_should_retry(mut self, should_retry: fn(&E) -> bool) -> Self {
-        self.should_retry = Some(should_retry);
+    pub fn with_retry_condition(mut self, retry_condition: fn(&E) -> bool) -> Self {
+        self.retry_condition = Some(retry_condition);
         self
     }
 }

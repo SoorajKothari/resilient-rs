@@ -18,7 +18,7 @@ use std::thread::sleep;
 /// use resilient_rs::config::RetryConfig;
 /// use resilient_rs::synchronous::retry;
 ///
-/// let retry_config = RetryConfig { max_attempts: 3, delay: Duration::from_millis(500), should_retry: None };
+/// let retry_config = RetryConfig { max_attempts: 3, delay: Duration::from_millis(500), retry_condition: None };
 /// let result: Result<i32, &str> = retry(|| {
 ///     Err("Temporary failure") // Always fails in this example
 /// }, &retry_config);
@@ -39,7 +39,7 @@ where
                 return Ok(output);
             }
             Err(err) if attempts + 1 < retry_config.max_attempts => {
-                let should_retry = retry_config.should_retry.map_or(true, |f| f(&err));
+                let should_retry = retry_config.retry_condition.map_or(true, |f| f(&err));
                 if should_retry {
                     warn!(
                         "Operation failed (attempt {}/{}), retrying after {:?}...",
@@ -130,7 +130,7 @@ where
                 return Ok(output);
             }
             Err(err) if attempts + 1 < retry_config.max_attempts => {
-                let should_retry = retry_config.should_retry.map_or(true, |f| f(&err));
+                let should_retry = retry_config.retry_condition.map_or(true, |f| f(&err));
 
                 if should_retry {
                     warn!(
@@ -176,7 +176,7 @@ mod tests {
         let retry_config = RetryConfig {
             max_attempts: 3,
             delay: Duration::from_millis(10),
-            should_retry: None,
+            retry_condition: None,
         };
 
         let mut attempts = 0;
@@ -201,7 +201,7 @@ mod tests {
         let retry_config = RetryConfig {
             max_attempts: 3,
             delay: Duration::from_millis(10),
-            should_retry: None,
+            retry_condition: None,
         };
 
         let attempts = AtomicUsize::new(0);
@@ -237,7 +237,7 @@ mod tests {
         let retry_config = RetryConfig {
             max_attempts: 5,
             delay: Duration::from_millis(10),
-            should_retry: None,
+            retry_condition: None,
         };
 
         let result = retry(succeed_on_third_attempt, &retry_config);
@@ -252,7 +252,7 @@ mod tests {
         let retry_config = RetryConfig {
             max_attempts: 3,
             delay: Duration::from_millis(100),
-            should_retry: None,
+            retry_condition: None,
         };
 
         let result: Result<i32, Error> = retry_with_exponential_backoff(|| Ok(60), &retry_config);
@@ -264,7 +264,7 @@ mod tests {
         let retry_config = RetryConfig {
             max_attempts: 5,
             delay: Duration::from_millis(100),
-            should_retry: None,
+            retry_condition: None,
         };
 
         static ATTEMPTS: AtomicUsize = AtomicUsize::new(0);
@@ -289,7 +289,7 @@ mod tests {
         let retry_config = RetryConfig {
             max_attempts: 3,
             delay: Duration::from_millis(100),
-            should_retry: None,
+            retry_condition: None,
         };
 
         static ATTEMPTS: AtomicUsize = AtomicUsize::new(0);
@@ -310,7 +310,7 @@ mod tests {
     fn test_retry_with_should_retry_success() {
         let attempts = RefCell::new(0);
         let config = RetryConfig::new(3, Duration::from_millis(1))
-            .with_should_retry(|e: &String| e.contains("transient"));
+            .with_retry_condition(|e: &String| e.contains("transient"));
 
         let result = retry(
             || {
@@ -333,7 +333,7 @@ mod tests {
     fn test_retry_with_should_not_retry_if_error() {
         let attempts = RefCell::new(0);
         let config = RetryConfig::new(3, Duration::from_millis(1))
-            .with_should_retry(|e: &String| e.contains("500"));
+            .with_retry_condition(|e: &String| e.contains("500"));
 
         let result = retry(
             || {
@@ -356,7 +356,7 @@ mod tests {
     fn test_retry_with_backoff_should_not_retry_after_1_attempt() {
         let attempts = RefCell::new(0);
         let config = RetryConfig::new(5, Duration::from_millis(1))
-            .with_should_retry(|e: &String| e.contains("transient"));
+            .with_retry_condition(|e: &String| e.contains("transient"));
 
         let result = retry_with_exponential_backoff(
             || {
