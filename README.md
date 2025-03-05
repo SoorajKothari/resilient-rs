@@ -17,25 +17,17 @@
 
 ## Feature Overview
 
-### Synchronous Features
-- ✅ Retry – Stable  
-- ✅ Retry with Backoff – Stable
-- ✅ Retry with Custom Conditions – Stable
-- ✅ Retry with Backoff & Custom Conditions  – Stable
-- 🛠️ Retry with fallback - Planned
+| **Feature**           | **Details**                        | **Status**      |
+|-----------------------|------------------------------------|-----------------|
+| **Retry**             | Basic retry functionality         | ✅ Stable       |
+|                       | With Backoff (exponential)        | ✅ Stable       |
+|                       | With Fallback                     | ✅ Stable     |
+| **Circuit Breaker**   | Prevents cascading failures       | 🛠️ Planned     |
+| **Logging**           | Comprehensive debugging support   | ✅ Stable       |
+| **More Examples**     | Additional usage examples         | 🛠️ Planned     |
 
-### Asynchronous Features
-- ✅ Retry – Stable  
-- ✅ Retry with Backoff – Stable  
-- ✅ Retry with Custom Conditions – Stable
-- ✅ Retry with Backoff & Custom Conditions  – Stable
-- 🛠️ Circuit Breaker – Planned
-- 🛠️ Retry with fallback - Planned
-
-### General
-- ✅ Logging
-- 🛠️ More Examples – Planned
-
+### Notes:
+- **Supported Contexts**: All features are available for both synchronous and asynchronous operations.
 ---
 
 ## 📦 How to Use `resilient-rs`
