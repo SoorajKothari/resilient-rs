@@ -40,7 +40,7 @@ Add the following line to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-resilient-rs = "0.4.0" # Replace with the latest version
+resilient-rs = "0.4.2" # Replace with the latest version
 ```
 
 OR

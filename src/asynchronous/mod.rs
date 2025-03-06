@@ -1,6 +1,6 @@
 use crate::config::RetryConfig;
+use async_std::task::sleep;
 use log::{info, warn};
-use tokio::time::sleep;
 
 /// Retries a given asynchronous operation based on the specified retry configuration.
 ///
@@ -183,11 +183,38 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::executor::block_on;
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
 
     #[derive(Debug, PartialEq, Eq)]
     struct DummyError(&'static str);
+
+    #[test]
+    fn test_retry_success_first_try_with_block_on() {
+        let config = RetryConfig {
+            max_attempts: 3,
+            delay: Duration::from_millis(10),
+            retry_condition: None,
+        };
+
+        let attempts = Arc::new(Mutex::new(0));
+
+        let op_attempts = attempts.clone();
+        let operation = move || {
+            let op_attempts = op_attempts.clone();
+            async move {
+                let mut count = op_attempts.lock().unwrap();
+                *count += 1;
+                Ok::<_, DummyError>("success")
+            }
+        };
+
+        let result = block_on(retry(operation, &config));
+
+        assert_eq!(result, Ok("success"));
+        assert_eq!(*attempts.lock().unwrap(), 1);
+    }
 
     #[tokio::test]
     async fn test_retry_success_first_try() {
