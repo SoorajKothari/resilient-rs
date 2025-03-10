@@ -17,14 +17,16 @@
 
 ## Feature Overview
 
-| **Feature**           | **Details**                        | **Status**      |
-|-----------------------|------------------------------------|-----------------|
-| **Retry**             | Basic retry functionality         | ✅ Stable       |
-|                       | With Backoff (exponential)        | ✅ Stable       |
-|                       | With Fallback                     | ✅ Stable     |
-| **Circuit Breaker**   | Prevents cascading failures       | 🛠️ Planned     |
-| **Logging**           | Comprehensive debugging support   | ✅ Stable       |
-| **More Examples**     | Additional usage examples         | 🛠️ Planned     |
+| **Feature**        | **Details**                                   | **Status**      |
+|--------------------|-----------------------------------------------|-----------------|
+| **Retry**          | Basic retry functionality                     | ✅ Stable       |
+|                    | With Backoff (exponential)                    | ✅ Stable       |
+|                    | With Fallback                                 | ✅ Stable     |
+| **Execute**        | Execute Operation with a timeout and fallback | ✅ Stable   |
+| **Circuit Breaker** | Prevents cascading failures                   | 🛠️ Planned     |
+| **Memoize**        | Future Cache                                  | 🛠️ Planned      |
+| **Logging**        | Comprehensive debugging support               | ✅ Stable       |
+| **More Examples**  | Additional usage examples                     | 🛠️ Planned     |
 
 ### Notes:
 - **Supported Contexts**: All features are available for both synchronous and asynchronous operations.
@@ -40,7 +42,7 @@ Add the following line to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-resilient-rs = "0.4.2" # Replace with the latest version
+resilient-rs = "0.4.3" # Replace with the latest version
 ```
 
 OR
