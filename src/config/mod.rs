@@ -116,3 +116,64 @@ impl<E> RetryConfig<E> {
         self
     }
 }
+
+/// Configuration for executable tasks supporting both synchronous and asynchronous operations.
+///
+/// This struct defines execution parameters for tasks that may run either synchronously
+/// or asynchronously, including a timeout duration and an optional fallback function.
+/// It's designed to be passed to functions that handle task execution with support for
+/// both execution models.
+///
+/// # Type Parameters
+/// * `T` - The type of the successful result, must implement `Clone`
+/// * `E` - The type of the error that may occur during execution
+///
+#[derive(Debug)]
+pub struct ExecConfig<T, E> {
+    /// The maximum duration allowed for task execution before timeout.
+    ///
+    /// This applies to both synchronous and asynchronous operations. For async operations,
+    /// this typically integrates with runtime timeout mechanisms.
+    pub timeout_duration: Duration,
+
+    /// Optional fallback function to execute if the primary task fails or times out.
+    ///
+    /// The fallback must be a synchronous function that returns a `Result`. For async
+    /// contexts, the execution function is responsible for handling the sync-to-async
+    /// transition if needed.
+    pub fallback: Option<fn() -> Result<T, E>>,
+}
+
+impl<T, E> ExecConfig<T, E>
+where
+    T: Clone,
+{
+    /// Creates a new execution configuration with the specified timeout duration.
+    ///
+    /// Initializes the configuration without a fallback function. This is suitable
+    /// for both synchronous and asynchronous task execution scenarios.
+    ///
+    /// # Arguments
+    /// * `timeout_duration` - Maximum execution time for sync or async operations
+    ///
+    /// # Returns
+    /// A new `ExecConfig` instance configured with the given timeout
+    pub fn new(timeout_duration: Duration) -> Self {
+        ExecConfig {
+            timeout_duration,
+            fallback: None,
+        }
+    }
+
+    /// Sets a fallback function to handle task failure or timeout scenarios.
+    ///
+    /// The fallback is a synchronous function, but can be used in both sync and async
+    /// execution contexts. When used with async operations, the executing function
+    /// should handle any necessary async adaptation.
+    ///
+    /// # Arguments
+    /// * `fallback` - Synchronous function returning a `Result` with matching types
+    pub fn with_fallback(&mut self, fallback: fn() -> Result<T, E>) {
+        self.fallback = Some(fallback);
+    }
+}
