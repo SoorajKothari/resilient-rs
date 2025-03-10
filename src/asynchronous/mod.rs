@@ -1,6 +1,8 @@
-use crate::config::RetryConfig;
+use crate::config::{ExecConfig, RetryConfig};
+use async_std::future::{TimeoutError, timeout};
 use async_std::task::sleep;
-use log::{info, warn};
+use log::{error, info, warn};
+use std::error::Error;
 
 /// Retries a given asynchronous operation based on the specified retry configuration.
 ///
@@ -177,6 +179,32 @@ where
         }
 
         attempts += 1;
+    }
+}
+
+pub async fn execute_with_timeout<F, Fut, T, E>(
+    mut operation: F,
+    exec_config: &ExecConfig<T>,
+) -> Result<T, Box<dyn Error>>
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<T, Box<dyn Error>>>,
+    E: Into<Box<dyn Error>>,
+{
+    match timeout(exec_config.timeout_duration, operation()).await {
+        Ok(result) => {
+            info!("Operation completed before timeout; returning result.");
+            result
+        }
+        Err(e) => {
+            if let Some(fallback) = exec_config.fallback {
+                warn!("Operation timed out; executing fallback.");
+                fallback()
+            } else {
+                error!("Operation timed out; no fallback provided, returning error.");
+                Err(Box::new(e))
+            }
+        }
     }
 }
 
@@ -448,5 +476,96 @@ mod tests {
         let result = retry_with_exponential_backoff(operation, &config).await;
         assert_eq!(result, Err(DummyError("temporary fail")));
         assert_eq!(*attempts.lock().unwrap(), 1);
+    }
+
+    impl std::fmt::Display for DummyError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.0)
+        }
+    }
+    impl Error for DummyError {}
+
+    #[tokio::test]
+    async fn test_execute_with_timeout_success() {
+        let config = ExecConfig {
+            timeout_duration: Duration::from_millis(100),
+            fallback: None,
+        };
+
+        let operation = || async { Ok("success") };
+        let result = execute_with_timeout::<_, _, _, Box<dyn Error>>(operation, &config).await;
+        assert_eq!(result.unwrap(), "success");
+    }
+
+    #[tokio::test]
+    async fn test_execute_with_timeout_immediate_failure() {
+        let config: ExecConfig<String> = ExecConfig {
+            timeout_duration: Duration::from_millis(100),
+            fallback: None,
+        };
+
+        let operation =
+            || async { Err(Box::new(DummyError("immediate failure")) as Box<dyn Error>) };
+        let result = execute_with_timeout::<_, _, _, Box<dyn Error>>(operation, &config).await;
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "immediate failure");
+    }
+
+    #[tokio::test]
+    async fn test_execute_with_timeout_timeout_no_fallback() {
+        let config: ExecConfig<String> = ExecConfig {
+            timeout_duration: Duration::from_millis(10),
+            fallback: None,
+        };
+
+        let operation = || async {
+            sleep(Duration::from_millis(50)).await;
+            Ok("too slow".to_string())
+        };
+        let result = execute_with_timeout::<_, _, _, Box<dyn Error>>(operation, &config).await;
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "future has timed out");
+    }
+
+    #[tokio::test]
+    async fn test_execute_with_timeout_timeout_with_fallback_success() {
+        let mut config = ExecConfig::new(Duration::from_millis(10));
+        config.with_fallback(|| Ok("fallback success".to_string()));
+
+        let operation = || async {
+            sleep(Duration::from_millis(50)).await;
+            Ok("too slow".to_string())
+        };
+        let result = execute_with_timeout::<_, _, _, Box<dyn Error>>(operation, &config).await;
+        assert_eq!(result.unwrap(), "fallback success");
+    }
+
+    #[tokio::test]
+    async fn test_execute_with_timeout_timeout_with_fallback_failure() {
+        let mut config = ExecConfig::new(Duration::from_millis(10));
+        config.with_fallback(|| Err(Box::new(DummyError("fallback failed")) as Box<dyn Error>));
+
+        let operation = || async {
+            sleep(Duration::from_millis(50)).await;
+            Ok("too slow".to_string())
+        };
+        let result = execute_with_timeout::<_, _, _, Box<dyn Error>>(operation, &config).await;
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "fallback failed");
+    }
+
+    #[tokio::test]
+    async fn test_execute_with_timeout_success_near_timeout() {
+        let config = ExecConfig {
+            timeout_duration: Duration::from_millis(50),
+            fallback: None,
+        };
+
+        let operation = || async {
+            sleep(Duration::from_millis(40)).await;
+            Ok("just in time".to_string())
+        };
+        let result = execute_with_timeout::<_, _, _, Box<dyn Error>>(operation, &config).await;
+        assert_eq!(result.unwrap(), "just in time");
     }
 }

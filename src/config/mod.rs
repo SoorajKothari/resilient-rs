@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::time::Duration;
 
 /// Configuration for retrying operations.
@@ -129,7 +130,7 @@ impl<E> RetryConfig<E> {
 /// * `E` - The type of the error that may occur during execution
 ///
 #[derive(Debug)]
-pub struct ExecConfig<T, E> {
+pub struct ExecConfig<T> {
     /// The maximum duration allowed for task execution before timeout.
     ///
     /// This applies to both synchronous and asynchronous operations. For async operations,
@@ -141,10 +142,10 @@ pub struct ExecConfig<T, E> {
     /// The fallback must be a synchronous function that returns a `Result`. For async
     /// contexts, the execution function is responsible for handling the sync-to-async
     /// transition if needed.
-    pub fallback: Option<fn() -> Result<T, E>>,
+    pub fallback: Option<fn() -> Result<T, Box<dyn Error>>>,
 }
 
-impl<T, E> ExecConfig<T, E>
+impl<T> ExecConfig<T>
 where
     T: Clone,
 {
@@ -173,7 +174,7 @@ where
     ///
     /// # Arguments
     /// * `fallback` - Synchronous function returning a `Result` with matching types
-    pub fn with_fallback(&mut self, fallback: fn() -> Result<T, E>) {
+    pub fn with_fallback(&mut self, fallback: fn() -> Result<T, Box<dyn Error>>) {
         self.fallback = Some(fallback);
     }
 }
