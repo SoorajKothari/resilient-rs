@@ -212,271 +212,12 @@ where
 mod tests {
     use super::*;
     use futures::executor::block_on;
+    use std::error::Error;
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
-
+    use tokio::time::sleep;
     #[derive(Debug, PartialEq, Eq)]
     struct DummyError(&'static str);
-
-    #[test]
-    fn test_retry_success_first_try_with_block_on() {
-        let config = RetryConfig {
-            max_attempts: 3,
-            delay: Duration::from_millis(10),
-            retry_condition: None,
-        };
-
-        let attempts = Arc::new(Mutex::new(0));
-
-        let op_attempts = attempts.clone();
-        let operation = move || {
-            let op_attempts = op_attempts.clone();
-            async move {
-                let mut count = op_attempts.lock().unwrap();
-                *count += 1;
-                Ok::<_, DummyError>("success")
-            }
-        };
-
-        let result = block_on(retry(operation, &config));
-
-        assert_eq!(result, Ok("success"));
-        assert_eq!(*attempts.lock().unwrap(), 1);
-    }
-
-    #[tokio::test]
-    async fn test_retry_success_first_try() {
-        let config = RetryConfig {
-            max_attempts: 3,
-            delay: Duration::from_millis(10),
-            retry_condition: None,
-        };
-
-        let attempts = Arc::new(Mutex::new(0));
-
-        let op_attempts = attempts.clone();
-        let operation = move || {
-            let op_attempts = op_attempts.clone();
-            async move {
-                let mut count = op_attempts.lock().unwrap();
-                *count += 1;
-                Ok::<_, DummyError>("success")
-            }
-        };
-
-        let result = retry(operation, &config).await;
-        assert_eq!(result, Ok("success"));
-        assert_eq!(*attempts.lock().unwrap(), 1);
-    }
-
-    #[tokio::test]
-    async fn test_retry_success_after_failures() {
-        let config = RetryConfig {
-            max_attempts: 5,
-            delay: Duration::from_millis(10),
-            retry_condition: None,
-        };
-
-        let attempts = Arc::new(Mutex::new(0));
-
-        let op_attempts = attempts.clone();
-        let operation = move || {
-            let op_attempts = op_attempts.clone();
-            async move {
-                let mut count = op_attempts.lock().unwrap();
-                *count += 1;
-                if *count < 4 {
-                    Err(DummyError("temporary failure"))
-                } else {
-                    Ok("eventual success")
-                }
-            }
-        };
-
-        let result = retry(operation, &config).await;
-        assert_eq!(result, Ok("eventual success"));
-        assert_eq!(*attempts.lock().unwrap(), 4);
-    }
-
-    #[tokio::test]
-    async fn test_retry_failure_all_attempts() {
-        let config = RetryConfig {
-            max_attempts: 3,
-            delay: Duration::from_millis(10),
-            retry_condition: None,
-        };
-
-        let attempts = Arc::new(Mutex::new(0));
-
-        let op_attempts = attempts.clone();
-        let operation = move || {
-            let op_attempts = op_attempts.clone();
-            async move {
-                let mut count = op_attempts.lock().unwrap();
-                *count += 1;
-                Err(DummyError("permanent failure"))
-            }
-        };
-
-        let result: Result<(), DummyError> = retry(operation, &config).await;
-        assert_eq!(result, Err(DummyError("permanent failure")));
-        assert_eq!(*attempts.lock().unwrap(), config.max_attempts);
-    }
-
-    #[tokio::test]
-    async fn test_retry_with_exponential_backoff_success_first_try() {
-        let config = RetryConfig::default();
-
-        let attempts = Arc::new(Mutex::new(0));
-
-        let op_attempts = attempts.clone();
-        let operation = move || {
-            let op_attempts = op_attempts.clone();
-            async move {
-                let mut count = op_attempts.lock().unwrap();
-                *count += 1;
-                Ok::<_, DummyError>("successful")
-            }
-        };
-
-        let result = retry_with_exponential_backoff(operation, &config).await;
-        assert_eq!(result, Ok("successful"));
-        assert_eq!(*attempts.lock().unwrap(), 1);
-    }
-
-    #[tokio::test]
-    async fn test_retry_with_exponential_backoff_success_after_failures() {
-        let config = RetryConfig {
-            max_attempts: 5,
-            delay: Duration::from_millis(10),
-            retry_condition: None,
-        };
-
-        let attempts = Arc::new(Mutex::new(0));
-
-        let op_attempts = attempts.clone();
-        let operation = move || {
-            let op_attempts = op_attempts.clone();
-            async move {
-                let mut count = op_attempts.lock().unwrap();
-                *count += 1;
-                if *count < 4 {
-                    Err(DummyError("temporary fail"))
-                } else {
-                    Ok("eventual success")
-                }
-            }
-        };
-
-        let result = retry_with_exponential_backoff(operation, &config).await;
-        assert_eq!(result, Ok("eventual success"));
-        assert_eq!(*attempts.lock().unwrap(), 4);
-    }
-
-    #[tokio::test]
-    async fn test_retry_with_exponential_backoff_failure_all_attempts() {
-        let config = RetryConfig {
-            max_attempts: 3,
-            delay: Duration::from_millis(10),
-            retry_condition: None,
-        };
-
-        let attempts = Arc::new(Mutex::new(0));
-
-        let op_attempts = attempts.clone();
-        let operation = move || {
-            let op_attempts = op_attempts.clone();
-            async move {
-                let mut count = op_attempts.lock().unwrap();
-                *count += 1;
-                Err(DummyError("always fail"))
-            }
-        };
-
-        let result: Result<(), DummyError> =
-            retry_with_exponential_backoff(operation, &config).await;
-        assert_eq!(result, Err(DummyError("always fail")));
-        assert_eq!(*attempts.lock().unwrap(), config.max_attempts);
-    }
-
-    #[tokio::test]
-    async fn test_retry_fail_first_try_retry_condition_un_match() {
-        let config = RetryConfig {
-            max_attempts: 3,
-            delay: Duration::from_millis(10),
-            retry_condition: Some(|e: &DummyError| e.0.contains("transient")),
-        };
-
-        let attempts = Arc::new(Mutex::new(0));
-
-        let op_attempts = attempts.clone();
-        let operation = move || {
-            let op_attempts = op_attempts.clone();
-            async move {
-                let mut count = op_attempts.lock().unwrap();
-                *count += 1;
-                Err(DummyError("always fail"))
-            }
-        };
-
-        let result: Result<(), DummyError> = retry(operation, &config).await;
-        assert_eq!(result, Err(DummyError("always fail")));
-        assert_eq!(*attempts.lock().unwrap(), 1);
-    }
-
-    #[tokio::test]
-    async fn test_retry_fail_first_try_retry_condition_match() {
-        let config = RetryConfig {
-            max_attempts: 3,
-            delay: Duration::from_millis(10),
-            retry_condition: Some(|e: &DummyError| e.0.contains("transient")),
-        };
-
-        let attempts = Arc::new(Mutex::new(0));
-
-        let op_attempts = attempts.clone();
-        let operation = move || {
-            let op_attempts = op_attempts.clone();
-            async move {
-                let mut count = op_attempts.lock().unwrap();
-                *count += 1;
-                Err(DummyError("transient"))
-            }
-        };
-
-        let result: Result<(), DummyError> = retry(operation, &config).await;
-        assert_eq!(result, Err(DummyError("transient")));
-        assert_eq!(*attempts.lock().unwrap(), 3);
-    }
-
-    #[tokio::test]
-    async fn test_retry_with_exponential_backoff_success_after_failures_with_condition() {
-        let config = RetryConfig {
-            max_attempts: 5,
-            delay: Duration::from_millis(10),
-            retry_condition: Some(|e: &DummyError| e.0.contains("405")),
-        };
-
-        let attempts = Arc::new(Mutex::new(0));
-
-        let op_attempts = attempts.clone();
-        let operation = move || {
-            let op_attempts = op_attempts.clone();
-            async move {
-                let mut count = op_attempts.lock().unwrap();
-                *count += 1;
-                if *count < 2 {
-                    Err(DummyError("temporary fail"))
-                } else {
-                    Ok("eventual success")
-                }
-            }
-        };
-
-        let result = retry_with_exponential_backoff(operation, &config).await;
-        assert_eq!(result, Err(DummyError("temporary fail")));
-        assert_eq!(*attempts.lock().unwrap(), 1);
-    }
 
     impl std::fmt::Display for DummyError {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -485,87 +226,355 @@ mod tests {
     }
     impl Error for DummyError {}
 
-    #[tokio::test]
-    async fn test_execute_with_fallback_success() {
-        let config = ExecConfig {
-            timeout_duration: Duration::from_millis(100),
-            fallback: None,
-        };
+    // Suite for `retry` function
+    mod retry_tests {
+        use super::*;
 
-        let operation = || async { Ok("success") };
-        let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
-        assert_eq!(result.unwrap(), "success");
+        #[test]
+        fn test_retry_success_first_try_with_block_on() {
+            let config = RetryConfig {
+                max_attempts: 3,
+                delay: Duration::from_millis(10),
+                retry_condition: None,
+            };
+
+            let attempts = Arc::new(Mutex::new(0));
+            let op_attempts = attempts.clone();
+            let operation = move || {
+                let op_attempts = op_attempts.clone();
+                async move {
+                    let mut count = op_attempts.lock().unwrap();
+                    *count += 1;
+                    Ok::<_, DummyError>("success")
+                }
+            };
+
+            let result = block_on(retry(operation, &config));
+            assert_eq!(result, Ok("success"));
+            assert_eq!(*attempts.lock().unwrap(), 1);
+        }
+
+        #[tokio::test]
+        async fn test_retry_success_first_try() {
+            let config = RetryConfig {
+                max_attempts: 3,
+                delay: Duration::from_millis(10),
+                retry_condition: None,
+            };
+
+            let attempts = Arc::new(Mutex::new(0));
+            let op_attempts = attempts.clone();
+            let operation = move || {
+                let op_attempts = op_attempts.clone();
+                async move {
+                    let mut count = op_attempts.lock().unwrap();
+                    *count += 1;
+                    Ok::<_, DummyError>("success")
+                }
+            };
+
+            let result = retry(operation, &config).await;
+            assert_eq!(result, Ok("success"));
+            assert_eq!(*attempts.lock().unwrap(), 1);
+        }
+
+        #[tokio::test]
+        async fn test_retry_success_after_failures() {
+            let config = RetryConfig {
+                max_attempts: 5,
+                delay: Duration::from_millis(10),
+                retry_condition: None,
+            };
+
+            let attempts = Arc::new(Mutex::new(0));
+            let op_attempts = attempts.clone();
+            let operation = move || {
+                let op_attempts = op_attempts.clone();
+                async move {
+                    let mut count = op_attempts.lock().unwrap();
+                    *count += 1;
+                    if *count < 4 {
+                        Err(DummyError("temporary failure"))
+                    } else {
+                        Ok("eventual success")
+                    }
+                }
+            };
+
+            let result = retry(operation, &config).await;
+            assert_eq!(result, Ok("eventual success"));
+            assert_eq!(*attempts.lock().unwrap(), 4);
+        }
+
+        #[tokio::test]
+        async fn test_retry_failure_all_attempts() {
+            let config = RetryConfig {
+                max_attempts: 3,
+                delay: Duration::from_millis(10),
+                retry_condition: None,
+            };
+
+            let attempts = Arc::new(Mutex::new(0));
+            let op_attempts = attempts.clone();
+            let operation = move || {
+                let op_attempts = op_attempts.clone();
+                async move {
+                    let mut count = op_attempts.lock().unwrap();
+                    *count += 1;
+                    Err(DummyError("permanent failure"))
+                }
+            };
+
+            let result: Result<(), DummyError> = retry(operation, &config).await;
+            assert_eq!(result, Err(DummyError("permanent failure")));
+            assert_eq!(*attempts.lock().unwrap(), config.max_attempts);
+        }
+
+        #[tokio::test]
+        async fn test_retry_fail_first_try_retry_condition_un_match() {
+            let config = RetryConfig {
+                max_attempts: 3,
+                delay: Duration::from_millis(10),
+                retry_condition: Some(|e: &DummyError| e.0.contains("transient")),
+            };
+
+            let attempts = Arc::new(Mutex::new(0));
+            let op_attempts = attempts.clone();
+            let operation = move || {
+                let op_attempts = op_attempts.clone();
+                async move {
+                    let mut count = op_attempts.lock().unwrap();
+                    *count += 1;
+                    Err(DummyError("always fail"))
+                }
+            };
+
+            let result: Result<(), DummyError> = retry(operation, &config).await;
+            assert_eq!(result, Err(DummyError("always fail")));
+            assert_eq!(*attempts.lock().unwrap(), 1);
+        }
+
+        #[tokio::test]
+        async fn test_retry_fail_first_try_retry_condition_match() {
+            let config = RetryConfig {
+                max_attempts: 3,
+                delay: Duration::from_millis(10),
+                retry_condition: Some(|e: &DummyError| e.0.contains("transient")),
+            };
+
+            let attempts = Arc::new(Mutex::new(0));
+            let op_attempts = attempts.clone();
+            let operation = move || {
+                let op_attempts = op_attempts.clone();
+                async move {
+                    let mut count = op_attempts.lock().unwrap();
+                    *count += 1;
+                    Err(DummyError("transient"))
+                }
+            };
+
+            let result: Result<(), DummyError> = retry(operation, &config).await;
+            assert_eq!(result, Err(DummyError("transient")));
+            assert_eq!(*attempts.lock().unwrap(), 3);
+        }
     }
 
-    #[tokio::test]
-    async fn test_execute_with_fallback_immediate_failure() {
-        let config: ExecConfig<String> = ExecConfig {
-            timeout_duration: Duration::from_millis(100),
-            fallback: None,
-        };
+    // Suite for `retry_with_exponential_backoff` function
+    mod retry_with_exponential_backoff_tests {
+        use super::*;
 
-        let operation =
-            || async { Err(Box::new(DummyError("immediate failure")) as Box<dyn Error>) };
-        let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err().to_string(), "immediate failure");
+        #[tokio::test]
+        async fn test_retry_with_exponential_backoff_success_first_try() {
+            let config = RetryConfig {
+                max_attempts: 3,
+                delay: Duration::from_millis(10),
+                retry_condition: None,
+            };
+
+            let attempts = Arc::new(Mutex::new(0));
+            let op_attempts = attempts.clone();
+            let operation = move || {
+                let op_attempts = op_attempts.clone();
+                async move {
+                    let mut count = op_attempts.lock().unwrap();
+                    *count += 1;
+                    Ok::<_, DummyError>("successful")
+                }
+            };
+
+            let result = retry_with_exponential_backoff(operation, &config).await;
+            assert_eq!(result, Ok("successful"));
+            assert_eq!(*attempts.lock().unwrap(), 1);
+        }
+
+        #[tokio::test]
+        async fn test_retry_with_exponential_backoff_success_after_failures() {
+            let config = RetryConfig {
+                max_attempts: 5,
+                delay: Duration::from_millis(10),
+                retry_condition: None,
+            };
+
+            let attempts = Arc::new(Mutex::new(0));
+            let op_attempts = attempts.clone();
+            let operation = move || {
+                let op_attempts = op_attempts.clone();
+                async move {
+                    let mut count = op_attempts.lock().unwrap();
+                    *count += 1;
+                    if *count < 4 {
+                        Err(DummyError("temporary fail"))
+                    } else {
+                        Ok("eventual success")
+                    }
+                }
+            };
+
+            let result = retry_with_exponential_backoff(operation, &config).await;
+            assert_eq!(result, Ok("eventual success"));
+            assert_eq!(*attempts.lock().unwrap(), 4);
+        }
+
+        #[tokio::test]
+        async fn test_retry_with_exponential_backoff_failure_all_attempts() {
+            let config = RetryConfig {
+                max_attempts: 3,
+                delay: Duration::from_millis(10),
+                retry_condition: None,
+            };
+
+            let attempts = Arc::new(Mutex::new(0));
+            let op_attempts = attempts.clone();
+            let operation = move || {
+                let op_attempts = op_attempts.clone();
+                async move {
+                    let mut count = op_attempts.lock().unwrap();
+                    *count += 1;
+                    Err(DummyError("always fail"))
+                }
+            };
+
+            let result: Result<(), DummyError> =
+                retry_with_exponential_backoff(operation, &config).await;
+            assert_eq!(result, Err(DummyError("always fail")));
+            assert_eq!(*attempts.lock().unwrap(), config.max_attempts);
+        }
+
+        #[tokio::test]
+        async fn test_retry_with_exponential_backoff_success_after_failures_with_condition() {
+            let config = RetryConfig {
+                max_attempts: 5,
+                delay: Duration::from_millis(10),
+                retry_condition: Some(|e: &DummyError| e.0.contains("405")),
+            };
+
+            let attempts = Arc::new(Mutex::new(0));
+            let op_attempts = attempts.clone();
+            let operation = move || {
+                let op_attempts = op_attempts.clone();
+                async move {
+                    let mut count = op_attempts.lock().unwrap();
+                    *count += 1;
+                    if *count < 2 {
+                        Err(DummyError("temporary fail"))
+                    } else {
+                        Ok("eventual success")
+                    }
+                }
+            };
+
+            let result = retry_with_exponential_backoff(operation, &config).await;
+            assert_eq!(result, Err(DummyError("temporary fail")));
+            assert_eq!(*attempts.lock().unwrap(), 1);
+        }
     }
 
-    #[tokio::test]
-    async fn test_execute_with_fallback_timeout_no_fallback() {
-        let config: ExecConfig<String> = ExecConfig {
-            timeout_duration: Duration::from_millis(10),
-            fallback: None,
-        };
+    // Suite for `execute_with_timeout` function
+    mod execute_with_timeout_tests {
+        use super::*;
 
-        let operation = || async {
-            sleep(Duration::from_millis(50)).await;
-            Ok("too slow".to_string())
-        };
-        let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err().to_string(), "future has timed out");
-    }
+        #[tokio::test]
+        async fn test_execute_with_timeout_success() {
+            let config: ExecConfig<String> = ExecConfig {
+                timeout_duration: Duration::from_millis(100),
+                fallback: None,
+            };
 
-    #[tokio::test]
-    async fn test_execute_with_fallback_timeout_with_fallback_success() {
-        let mut config = ExecConfig::new(Duration::from_millis(10));
-        config.with_fallback(|| Ok("fallback success".to_string()));
+            let operation = || async { Ok("success".to_string()) };
+            let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
+            assert_eq!(result.unwrap(), "success");
+        }
 
-        let operation = || async {
-            sleep(Duration::from_millis(50)).await;
-            Ok("too slow".to_string())
-        };
-        let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
-        assert_eq!(result.unwrap(), "fallback success");
-    }
+        #[tokio::test]
+        async fn test_execute_with_timeout_immediate_failure() {
+            let config: ExecConfig<String> = ExecConfig {
+                timeout_duration: Duration::from_millis(100),
+                fallback: None,
+            };
 
-    #[tokio::test]
-    async fn test_execute_with_fallback_timeout_with_fallback_failure() {
-        let mut config = ExecConfig::new(Duration::from_millis(10));
-        config.with_fallback(|| Err(Box::new(DummyError("fallback failed")) as Box<dyn Error>));
+            let operation =
+                || async { Err(Box::new(DummyError("immediate failure")) as Box<dyn Error>) };
+            let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err().to_string(), "immediate failure");
+        }
 
-        let operation = || async {
-            sleep(Duration::from_millis(50)).await;
-            Ok("too slow".to_string())
-        };
-        let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err().to_string(), "fallback failed");
-    }
+        #[tokio::test]
+        async fn test_execute_with_timeout_timeout_no_fallback() {
+            let config: ExecConfig<String> = ExecConfig {
+                timeout_duration: Duration::from_millis(10),
+                fallback: None,
+            };
 
-    #[tokio::test]
-    async fn test_execute_with_fallback_success_near_timeout() {
-        let config = ExecConfig {
-            timeout_duration: Duration::from_millis(50),
-            fallback: None,
-        };
+            let operation = || async {
+                sleep(Duration::from_millis(50)).await;
+                Ok("too slow".to_string())
+            };
+            let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err().to_string(), "future has timed out");
+        }
 
-        let operation = || async {
-            sleep(Duration::from_millis(40)).await;
-            Ok("just in time".to_string())
-        };
-        let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
-        assert_eq!(result.unwrap(), "just in time");
+        #[tokio::test]
+        async fn test_execute_with_timeout_timeout_with_fallback_success() {
+            let mut config: ExecConfig<String> = ExecConfig::new(Duration::from_millis(10));
+            config.with_fallback(|| Ok("fallback success".to_string()));
+
+            let operation = || async {
+                sleep(Duration::from_millis(50)).await;
+                Ok("too slow".to_string())
+            };
+            let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
+            assert_eq!(result.unwrap(), "fallback success");
+        }
+
+        #[tokio::test]
+        async fn test_execute_with_timeout_timeout_with_fallback_failure() {
+            let mut config: ExecConfig<String> = ExecConfig::new(Duration::from_millis(10));
+            config.with_fallback(|| Err(Box::new(DummyError("fallback failed")) as Box<dyn Error>));
+
+            let operation = || async {
+                sleep(Duration::from_millis(50)).await;
+                Ok("too slow".to_string())
+            };
+            let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err().to_string(), "fallback failed");
+        }
+
+        #[tokio::test]
+        async fn test_execute_with_timeout_success_near_timeout() {
+            let config: ExecConfig<String> = ExecConfig {
+                timeout_duration: Duration::from_millis(50),
+                fallback: None,
+            };
+
+            let operation = || async {
+                sleep(Duration::from_millis(40)).await;
+                Ok("just in time".to_string())
+            };
+            let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
+            assert_eq!(result.unwrap(), "just in time");
+        }
     }
 }
