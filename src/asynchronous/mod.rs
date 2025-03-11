@@ -182,16 +182,11 @@ where
     }
 }
 
-pub async fn execute_with_fallback<F, Fut, T, E>(
-    mut operation: F,
+pub async fn execute_with_fallback<T>(
+    operation: impl Future<Output = Result<T, Box<dyn Error>>>,
     exec_config: &ExecConfig<T>,
-) -> Result<T, Box<dyn Error>>
-where
-    F: FnMut() -> Fut,
-    Fut: Future<Output = Result<T, Box<dyn Error>>>,
-    E: Into<Box<dyn Error>>,
-{
-    match timeout(exec_config.timeout_duration, operation()).await {
+) -> Result<T, Box<dyn Error>> {
+    match timeout(exec_config.timeout_duration, operation).await {
         Ok(result) => {
             info!("Operation completed before timeout; returning result.");
             result
@@ -501,7 +496,7 @@ mod tests {
             };
 
             let operation = || async { Ok("success".to_string()) };
-            let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
+            let result = execute_with_fallback(operation(), &config).await;
             assert_eq!(result.unwrap(), "success");
         }
 
@@ -514,7 +509,7 @@ mod tests {
 
             let operation =
                 || async { Err(Box::new(DummyError("immediate failure")) as Box<dyn Error>) };
-            let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
+            let result = execute_with_fallback(operation(), &config).await;
             assert!(result.is_err());
             assert_eq!(result.unwrap_err().to_string(), "immediate failure");
         }
@@ -530,7 +525,7 @@ mod tests {
                 sleep(Duration::from_millis(50)).await;
                 Ok("too slow".to_string())
             };
-            let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
+            let result = execute_with_fallback(operation(), &config).await;
             assert!(result.is_err());
             assert_eq!(result.unwrap_err().to_string(), "future has timed out");
         }
@@ -544,7 +539,7 @@ mod tests {
                 sleep(Duration::from_millis(50)).await;
                 Ok("too slow".to_string())
             };
-            let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
+            let result = execute_with_fallback(operation(), &config).await;
             assert_eq!(result.unwrap(), "fallback success");
         }
 
@@ -557,7 +552,7 @@ mod tests {
                 sleep(Duration::from_millis(50)).await;
                 Ok("too slow".to_string())
             };
-            let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
+            let result = execute_with_fallback(operation(), &config).await;
             assert!(result.is_err());
             assert_eq!(result.unwrap_err().to_string(), "fallback failed");
         }
@@ -573,7 +568,7 @@ mod tests {
                 sleep(Duration::from_millis(40)).await;
                 Ok("just in time".to_string())
             };
-            let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
+            let result = execute_with_fallback(operation(), &config).await;
             assert_eq!(result.unwrap(), "just in time");
         }
     }
