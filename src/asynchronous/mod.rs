@@ -182,7 +182,7 @@ where
     }
 }
 
-pub async fn execute_with_timeout<F, Fut, T, E>(
+pub async fn execute_with_fallback<F, Fut, T, E>(
     mut operation: F,
     exec_config: &ExecConfig<T>,
 ) -> Result<T, Box<dyn Error>>
@@ -486,19 +486,19 @@ mod tests {
     impl Error for DummyError {}
 
     #[tokio::test]
-    async fn test_execute_with_timeout_success() {
+    async fn test_execute_with_fallback_success() {
         let config = ExecConfig {
             timeout_duration: Duration::from_millis(100),
             fallback: None,
         };
 
         let operation = || async { Ok("success") };
-        let result = execute_with_timeout::<_, _, _, Box<dyn Error>>(operation, &config).await;
+        let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
         assert_eq!(result.unwrap(), "success");
     }
 
     #[tokio::test]
-    async fn test_execute_with_timeout_immediate_failure() {
+    async fn test_execute_with_fallback_immediate_failure() {
         let config: ExecConfig<String> = ExecConfig {
             timeout_duration: Duration::from_millis(100),
             fallback: None,
@@ -506,13 +506,13 @@ mod tests {
 
         let operation =
             || async { Err(Box::new(DummyError("immediate failure")) as Box<dyn Error>) };
-        let result = execute_with_timeout::<_, _, _, Box<dyn Error>>(operation, &config).await;
+        let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
         assert!(result.is_err());
         assert_eq!(result.unwrap_err().to_string(), "immediate failure");
     }
 
     #[tokio::test]
-    async fn test_execute_with_timeout_timeout_no_fallback() {
+    async fn test_execute_with_fallback_timeout_no_fallback() {
         let config: ExecConfig<String> = ExecConfig {
             timeout_duration: Duration::from_millis(10),
             fallback: None,
@@ -522,13 +522,13 @@ mod tests {
             sleep(Duration::from_millis(50)).await;
             Ok("too slow".to_string())
         };
-        let result = execute_with_timeout::<_, _, _, Box<dyn Error>>(operation, &config).await;
+        let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
         assert!(result.is_err());
         assert_eq!(result.unwrap_err().to_string(), "future has timed out");
     }
 
     #[tokio::test]
-    async fn test_execute_with_timeout_timeout_with_fallback_success() {
+    async fn test_execute_with_fallback_timeout_with_fallback_success() {
         let mut config = ExecConfig::new(Duration::from_millis(10));
         config.with_fallback(|| Ok("fallback success".to_string()));
 
@@ -536,12 +536,12 @@ mod tests {
             sleep(Duration::from_millis(50)).await;
             Ok("too slow".to_string())
         };
-        let result = execute_with_timeout::<_, _, _, Box<dyn Error>>(operation, &config).await;
+        let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
         assert_eq!(result.unwrap(), "fallback success");
     }
 
     #[tokio::test]
-    async fn test_execute_with_timeout_timeout_with_fallback_failure() {
+    async fn test_execute_with_fallback_timeout_with_fallback_failure() {
         let mut config = ExecConfig::new(Duration::from_millis(10));
         config.with_fallback(|| Err(Box::new(DummyError("fallback failed")) as Box<dyn Error>));
 
@@ -549,13 +549,13 @@ mod tests {
             sleep(Duration::from_millis(50)).await;
             Ok("too slow".to_string())
         };
-        let result = execute_with_timeout::<_, _, _, Box<dyn Error>>(operation, &config).await;
+        let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
         assert!(result.is_err());
         assert_eq!(result.unwrap_err().to_string(), "fallback failed");
     }
 
     #[tokio::test]
-    async fn test_execute_with_timeout_success_near_timeout() {
+    async fn test_execute_with_fallback_success_near_timeout() {
         let config = ExecConfig {
             timeout_duration: Duration::from_millis(50),
             fallback: None,
@@ -565,7 +565,7 @@ mod tests {
             sleep(Duration::from_millis(40)).await;
             Ok("just in time".to_string())
         };
-        let result = execute_with_timeout::<_, _, _, Box<dyn Error>>(operation, &config).await;
+        let result = execute_with_fallback::<_, _, _, Box<dyn Error>>(operation, &config).await;
         assert_eq!(result.unwrap(), "just in time");
     }
 }
