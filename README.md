@@ -30,6 +30,15 @@
 
 ### Notes:
 - **Supported Contexts**: All features are available for both synchronous and asynchronous operations.
+
+## Runtime Compatibility
+
+This library is designed to be compatible with multiple Rust async runtimes. The `resilient_rs::asynchronous` mod works seamlessly with:
+
+- **[Tokio](https://crates.io/crates/tokio)** - Using Tokio's async I/O and runtime
+- **[async-std](https://crates.io/crates/async-std)** - Using async-std's lightweight async runtime
+- **[futures](https://crates.io/crates/futures)** - Using the core futures crate with blocking execution
+
 ---
 
 ## 📦 How to Use `resilient-rs`
@@ -42,7 +51,7 @@ Add the following line to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-resilient-rs = "0.4.3" # Replace with the latest version
+resilient-rs = "0.4.4" # Replace with the latest version
 ```
 
 OR
