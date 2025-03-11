@@ -258,7 +258,7 @@ pub async fn execute_with_fallback<T>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use async_std::task::{sleep,block_on};
+    use async_std::task::{block_on, sleep};
     use std::error::Error;
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
