@@ -1,5 +1,5 @@
 use crate::config::{ExecConfig, RetryConfig};
-use async_std::future::{TimeoutError, timeout};
+use async_std::future::timeout;
 use async_std::task::sleep;
 use log::{error, info, warn};
 use std::error::Error;
@@ -182,6 +182,53 @@ where
     }
 }
 
+/// Executes an asynchronous operation with a timeout and an optional fallback.
+///
+/// This function runs the provided `operation` future with a specified timeout duration.
+/// If the operation completes within the timeout, its result is returned. If it times out,
+/// a fallback function (if provided) is executed synchronously to produce a result.
+///
+/// # Type Parameters
+///
+/// * `T` - The type of the successful result returned by the operation or fallback.
+///
+/// # Arguments
+///
+/// * `operation` - An asynchronous operation that returns a `Result<T, Box<dyn Error>>`.
+///                 This is typically an async block or function that performs the primary task.
+/// * `exec_config` - A reference to an `ExecConfig<T>` containing the timeout duration and
+///                   an optional fallback function.
+///
+/// # Returns
+///
+/// * `Ok(T)` - If the operation completes successfully within the timeout, or if the
+///             fallback succeeds after a timeout.
+/// * `Err(Box<dyn Error>)` - If the operation times out and no fallback is provided,
+///                           or if the fallback itself fails.
+///
+/// # Examples
+///
+/// ```rust
+/// use std::time::Duration;
+/// use async_std::task::sleep;
+/// fn main() {
+///     use futures::executor::block_on;
+/// use resilient_rs::asynchronous::execute_with_fallback;
+/// use resilient_rs::config::ExecConfig;
+/// let config = ExecConfig {
+///         timeout_duration: Duration::from_millis(50),
+///         fallback: Some(|| Ok("fallback result".to_string())),
+///     };
+///
+///     let operation = async {
+///         sleep(Duration::from_millis(100)).await;
+///         Ok("success".to_string())
+///     };
+///
+///     let result = block_on(async { execute_with_fallback(operation, &config).await } );
+///     assert_eq!(result.unwrap(), "fallback result");
+/// }
+/// ```
 pub async fn execute_with_fallback<T>(
     operation: impl Future<Output = Result<T, Box<dyn Error>>>,
     exec_config: &ExecConfig<T>,
