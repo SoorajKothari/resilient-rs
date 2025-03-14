@@ -14,30 +14,33 @@
 <i>💖 Loved the work? [Subscribe to my YouTube channel](https://www.youtube.com/@Semicolon10) or consider giving this repository a ⭐ to show your support!</i>
 </div>
 
+---
 
-## Feature Overview
+## 🚀 Feature Overview
 
-| **Feature**        | **Details**                                   | **Status**      |
-|--------------------|-----------------------------------------------|-----------------|
-| **Retry**          | Basic retry functionality                     | ✅ Stable       |
-|                    | With Backoff (exponential)                    | ✅ Stable       |
-|                    | With Fallback                                 | ✅ Stable     |
-| **Execute**        | Execute Operation with a timeout and fallback | ✅ Stable   |
-| **Circuit Breaker** | Prevents cascading failures                   | 🛠️ Planned     |
-| **Memoize**        | Future Cache                                  | 🛠️ Planned      |
-| **Logging**        | Comprehensive debugging support               | ✅ Stable       |
-| **More Examples**  | Additional usage examples                     | 🛠️ Planned     |
+Here’s a snapshot of what this library brings to the table—resilience, reliability, and a sprinkle of magic! Check out the features, their details, and where they stand:
+
+| **Feature**          | **Details**                                   | **Status**          |
+|----------------------|-----------------------------------------------|---------------------|
+| **🔄 Retry**         | Basic retry functionality—keeps trying!      | ✅ **Stable**       |
+|                      | With Backoff (exponential)—smart delays       | ✅ **Stable**       |
+|                      | With Fallback—graceful recovery              | ✅ **Stable**       |
+| **⚡ Execute**       | Run ops with timeout & fallback—like a pro   | ✅ **Stable**       |
+| **🛡️ Circuit Breaker** | Stops cascading chaos in its tracks         | 🛠️ **Planned**     |
+| **📦 Memoize**       | Cache it up for the future                   | 🛠️ **Planned**     |
+| **📜 Logging**       | Debug like a detective—full support          | ✅ **Stable**       |
+| **📚 More Examples** | Extra demos to spark your imagination        | 🛠️ **Planned**     |
 
 ### Notes:
-- **Supported Contexts**: All features are available for both synchronous and asynchronous operations.
+- **Supported Contexts**: All features work seamlessly for both **synchronous** and **asynchronous** operations—flexibility is our middle name!
 
-## Runtime Compatibility
+## 🏃‍♂️ Runtime Compatibility
 
-This library is designed to be compatible with multiple Rust async runtimes. The `resilient_rs::asynchronous` mod works seamlessly with:
+This library plays nice with your favorite Rust async runtimes. The `resilient_rs::asynchronous` module has you covered with:
 
-- **[Tokio](https://crates.io/crates/tokio)** - Using Tokio's async I/O and runtime
-- **[async-std](https://crates.io/crates/async-std)** - Using async-std's lightweight async runtime
-- **[futures](https://crates.io/crates/futures)** - Using the core futures crate with blocking execution
+- **[Tokio](https://crates.io/crates/tokio)** - Power up with Tokio’s async I/O and runtime
+- **[async-std](https://crates.io/crates/async-std)** - Keep it light with async-std’s sleek runtime
+- **[futures](https://crates.io/crates/futures)** - Stick to the basics with the core futures crate and blocking execution
 
 ---
 
@@ -51,80 +54,17 @@ Add the following line to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-resilient-rs = "0.4.4" # Replace with the latest version
+resilient-rs = "0.4.5" # Replace with the latest version
 ```
-
 OR
-
 ```bash
 cargo add resilient-rs
 ```
 
-#### Synchronous
-```rust
-use std::time::Duration;
-use resilient_rs::config::RetryConfig;
-use resilient_rs::synchronous::retry;
+## 📖 Examples
 
-fn main() {
-  let retry_config = RetryConfig::default();
-  let result: Result<i32, &str> = retry(|| {
-    Err("Temporary failure")
-  }, &retry_config);
-  assert!(result.is_err());
-}
-```
+Check out the [`code-examples`](code-examples/) folder for example usage of this crate.
 
-#### Asynchronous
-```rust
-use tokio::time::Duration;
-use reqwest::Client;
-use resilient_rs::asynchronous::retry;
-use resilient_rs::config::RetryConfig;
+## 🚀 Contributing
 
-async fn fetch_url() -> Result<String, reqwest::Error> {
-  let client = Client::new();
-  let response = client.get("https://example.com")
-          .send()
-          .await?;
-
-  if response.status().is_success() {
-    response.text().await
-  } else {
-    Err(reqwest::Error::new(reqwest::StatusCode::from_u16(response.status().as_u16()).unwrap(), "Request failed"))
-  }
-}
-
-#[tokio::main]
-async fn main() {
-  let retry_config = RetryConfig::default();
-
-  let result = retry(fetch_url, &retry_config).await;
-  match result {
-    Ok(output) => println!("Operation succeeded: {}", output),
-    Err(err) => println!("Operation failed: {}", err),
-  }
-}
-```
-
----
-## 🚀 Contributing Guidelines
-
-We welcome your contributions! Here's how to get started:
-
-### 🐛 Issues & 🌟 Features
-- Find an issue or planned feature you'd like to work on.
-- Comment on the issue (or create one for planned features) and tag me (`@semicolon-10`) for assignment.  
-  💡 *Tip*: Ensure it's not already assigned!
-- Once assigned, start working. 🎉
-
-### 🔧 Submitting Work
-1. 🍴 Fork the repo and create a new branch.
-2. 🛠️ Make changes and test thoroughly.
-3. ✅ Ensure git actions pass before tagging me for review.
-4. 📤 Submit a PR with a clear description and link the issue.
-
-### 🤝 Code of Conduct
-- Be respectful and collaborative. 🤗
-- Follow coding standards and guidelines. ✅
----
+We welcome your contributions! Please check out our [Contributing Guidelines](CONTRIBUTING.md) to get started.
