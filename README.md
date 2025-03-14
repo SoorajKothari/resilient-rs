@@ -63,7 +63,7 @@ cargo add resilient-rs
 
 ## 📖 Examples
 
-Check out the [`code-examples`](code-examples/) folder for example usage of this crate.
+Hover over the function you want to use in your IDE to see code documentation examples, or check out the [code-examples](https://github.com/semicolon-10/resilient-rs/tree/main/code-examples/) folder for example usage of this crate.
 
 ## 🚀 Contributing
 
