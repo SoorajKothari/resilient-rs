@@ -1,4 +1,4 @@
-name: arithmetic
+name: resilient-rs
 
 on:
   push:
@@ -14,34 +14,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
-    - name: Fmt
-      run: cargo fmt --check
-    - name: Run tests
-      run: cargo test --verbose
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          cd resilient-rs
+          cargo build --verbose
+      - name: Check formatting
+        run: |
+          cd resilient-rs
+          cargo fmt --check
+      - name: Run tests
+        run: |
+          cd resilient-rs
+          cargo test --verbose
 
   release:
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main' && needs.build.result == 'success'
+    if: github.ref == 'refs/heads/main' && needs.build.result == 'success' && github.actor == env.RELEASE_USER
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install dependencies
-      run: |
-        cargo install cargo-release
+      - uses: actions/checkout@v4
 
-    - name: Release
-      env:
-        CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-      run: |
-        echo "Releasing a version..."
-        cargo release --execute
+      - name: Install dependencies
+        run: cargo install cargo-release
 
-    - name: Publish
-      env:
-        CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-      run: cargo publish
+      - name: Release
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          cd resilient-rs
+          echo "Releasing a version..."
+          cargo release --execute
+
+      - name: Publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          cd resilient-rs
+          cargo publish
