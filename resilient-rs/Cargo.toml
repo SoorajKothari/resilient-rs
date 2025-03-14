@@ -4,7 +4,7 @@ version = "0.4.5"
 edition = "2024"
 
 description = "A Rust utility library for fault tolerance, including retry strategies, backoff mechanisms, and failure handling."
-license = "../LICENSE.md"
+license = "MIT"
 repository = "https://github.com/semicolon-10/resilient-rs.git"
 homepage = "https://github.com/semicolon-10/resilient-rs.git"
 documentation = "https://docs.rs/resilient-rs"
