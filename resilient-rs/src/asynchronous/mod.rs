@@ -1,8 +1,9 @@
-use crate::config::{ExecConfig, RetryConfig};
+use crate::config::{CircuitBreakerConfig, ExecConfig, RetryConfig};
 use async_std::future::timeout;
 use async_std::task::sleep;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use std::error::Error;
+use std::time::Instant;
 
 /// Retries a given asynchronous operation based on the specified retry configuration.
 ///
@@ -251,6 +252,165 @@ pub async fn execute_with_fallback<T>(
                 error!("Operation timed out; no fallback provided, returning error.");
                 Err(Box::new(e))
             }
+        }
+    }
+}
+
+/// Represents the possible states of a circuit breaker.
+///
+/// A circuit breaker can be in one of three states, which determine how it handles operations:
+/// - `Close`: Operations are allowed to proceed normally.
+/// - `Open`: Operations are blocked due to repeated failures, preventing further attempts until a cooldown period elapses.
+/// - `HalfOpen`: A trial state after the cooldown, where operations are tentatively allowed to test if the system has recovered.
+///
+/// This enum is used internally by the `CircuitBreaker` struct to manage its state machine.
+#[derive(Debug, PartialEq)]
+enum CircuitBreakerState {
+    Close,
+    Open,
+    HalfOpen,
+}
+
+/// A circuit breaker for managing fault tolerance in systems.
+///
+/// The `CircuitBreaker` struct implements the circuit breaker pattern to prevent cascading failures
+/// by monitoring successes and failures of operations. It uses a provided `CircuitBreakerConfig`
+/// to define thresholds and cooldown behavior, transitioning between states (`Close`, `Open`, `HalfOpen`)
+/// based on operation outcomes.
+///
+/// # Fields
+/// - `config`: Reference to the configuration defining thresholds and cooldown period.
+/// - `state`: The current state of the circuit breaker (`Close`, `Open`, or `HalfOpen`).
+/// - `failure_count`: Number of consecutive failures since the last state change.
+/// - `success_count`: Number of consecutive successes in the `HalfOpen` state.
+/// - `last_failure_time`: Timestamp of the most recent failure, if any, used to enforce the cooldown period.
+///
+/// # Lifetime
+/// The `'a` lifetime ties the `CircuitBreaker` to the lifetime of its `config` reference.
+/// ```
+pub struct CircuitBreaker<'a> {
+    config: &'a CircuitBreakerConfig,
+    state: CircuitBreakerState,
+    failure_count: usize,
+    success_count: usize,
+    last_failure_time: Option<Instant>,
+}
+
+impl<'a> CircuitBreaker<'a> {
+    /// Creates a new `CircuitBreaker` instance with the given configuration.
+    ///
+    /// Initializes the circuit breaker in the `Close` state, ready to handle operations.
+    ///
+    /// # Parameters
+    /// - `config`: A reference to a `CircuitBreakerConfig` defining the failure threshold,
+    ///   success threshold, and cooldown period.
+    ///
+    /// # Returns
+    /// A new `CircuitBreaker` instance configured with the provided `config`.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use std::time::Duration;
+    /// use resilient_rs::asynchronous::CircuitBreaker;
+    /// use resilient_rs::config::CircuitBreakerConfig;
+    ///
+    /// let config = CircuitBreakerConfig::new(2, 3, Duration::from_secs(5));
+    /// let cb = CircuitBreaker::new(&config);
+    /// ```
+    pub fn new(config: &'a CircuitBreakerConfig) -> Self {
+        CircuitBreaker {
+            config,
+            state: CircuitBreakerState::Close,
+            failure_count: 0,
+            success_count: 0,
+            last_failure_time: None,
+        }
+    }
+
+    /// Executes an operation under circuit breaker supervision.
+    ///
+    /// This method runs the provided async operation and updates the circuit breaker state based
+    /// on the outcome. If the breaker is `Open` and the cooldown period hasn’t elapsed, it blocks
+    /// the operation. In `HalfOpen`, it tests recovery, and in `Close`, it monitors for failures.
+    ///
+    /// # Parameters
+    /// - `operation`: An async closure or function that returns a `Future` yielding a `Result`.
+    ///   The closure must be `FnMut` to allow multiple calls if needed in the future.
+    ///
+    /// # Returns
+    /// - `Ok(T)` if the operation succeeds, where `T` is the operation’s return type.
+    /// - `Err(Box<dyn Error>)` if the operation fails or the breaker is `Open`.
+    /// ```
+    pub async fn call<F, Fut, T>(&mut self, mut operation: F) -> Result<T, Box<dyn Error>>
+    where
+        F: FnMut() -> Fut,
+        Fut: Future<Output = Result<T, Box<dyn Error>>>,
+    {
+        match self.state {
+            CircuitBreakerState::Open => {
+                if let Some(last_failure_time) = self.last_failure_time {
+                    if last_failure_time.elapsed() >= self.config.cooldown_period {
+                        self.state = CircuitBreakerState::HalfOpen;
+                        self.success_count = 0;
+                        warn!("Circuit Breaker transitioning to Half Open State");
+                    } else {
+                        warn!("Circuit Breaker is open.. Requests are blocked for now");
+                        return Err(Box::from(String::from(
+                            "Circuit Breaker is open. Please try later..!",
+                        )));
+                    }
+                }
+            }
+            _ => {}
+        }
+
+        match operation().await {
+            Ok(result) => {
+                debug!("Request Success response");
+                self.on_success();
+                Ok(result)
+            }
+            Err(err) => {
+                error!("Failed with {}", err);
+                self.on_failure();
+                Err(err)
+            }
+        }
+    }
+
+    /// Handles a successful operation outcome.
+    ///
+    /// Updates the circuit breaker state based on a successful operation:
+    /// - In `HalfOpen`, increments `success_count` and transitions to `Close` if the success threshold is met.
+    /// - In `Close`, resets `failure_count` to 0.
+    /// - In `Open`, does nothing (this method is typically called only after `call`).
+    fn on_success(&mut self) {
+        match self.state {
+            CircuitBreakerState::HalfOpen => {
+                self.success_count += 1;
+                if self.success_count >= self.config.success_threshold {
+                    self.state = CircuitBreakerState::Close;
+                    self.failure_count = 0;
+                    debug!("Circuit breaker transitioning to closed state");
+                }
+            }
+            _ => {
+                self.failure_count = 0;
+            }
+        }
+    }
+
+    /// Handles a failed operation outcome.
+    ///
+    /// Updates the circuit breaker state based on a failed operation:
+    /// - Increments `failure_count`.
+    /// - If `failure_count` exceeds the threshold, transitions to `Open` and records the failure time.
+    fn on_failure(&mut self) {
+        self.failure_count += 1;
+        if self.failure_count >= self.config.failure_threshold {
+            self.state = CircuitBreakerState::Open;
+            self.last_failure_time = Some(Instant::now());
+            error!("Circuit Breaker transitioning to open state");
         }
     }
 }
