@@ -26,7 +26,7 @@ Here’s a snapshot of what this library brings to the table—resilience, relia
 |                    | With Fallback—graceful recovery            | ✅ **Stable**       |
 | **⚡ Execute**     | Run ops with timeout & fallback—like a pro | ✅ **Stable**       |
 | **🧵 Parallel Exec**       | Concurrent task execution with limits      | 🛠️ **Planned**       |
-| **🛡️ Circuit Breaker** | Stops cascading chaos in its tracks        | ✅ **Stable**    |
+| 🛡️ Circuit Breaker | Stops cascading chaos in its tracks | ⚠️ Thread Unsafe |
 | **📦 Memoize**     | Future Cache                               | 🛠️ **Planned**     |
 | **📜 Logging**     | Debug like a detective—full support        | ✅ **Stable**       |
 | **📚 More Examples** | Extra demos to spark your imagination      | 🛠️ **Planned**     |
@@ -53,7 +53,7 @@ Add the following line to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-resilient-rs = "0.4.5" # Replace with the latest version
+resilient-rs = "0.4.6" # Replace with the latest version
 ```
 OR
 ```bash
