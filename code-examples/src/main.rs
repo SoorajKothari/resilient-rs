@@ -1,5 +1,6 @@
 use crate::asynchronous::{
-    example_async_exponential_with_condition, example_async_retry, example_execute_with_fallback,
+    circuit_breaker, example_async_exponential_with_condition, example_async_retry,
+    example_execute_with_fallback,
 };
 use crate::synchronous::{
     example_exponential_backoff, example_retry_with_condition, example_simple_retry,
@@ -46,7 +47,12 @@ fn async_examples_with_async_std() {
 }
 
 fn async_examples_with_tokio() {
-    println!("With tokio\n Coming Soon");
+    println!("\nWith tokio\n Coming Soon");
+}
+
+fn async_example_circuit_breaker() {
+    println!("\nCircuit Breaker");
+    block_on(circuit_breaker()).expect("Error");
 }
 
 fn main() {
@@ -54,4 +60,5 @@ fn main() {
     async_examples_with_futures();
     async_examples_with_async_std();
     async_examples_with_tokio();
+    async_example_circuit_breaker();
 }

@@ -178,3 +178,174 @@ where
         self.fallback = Some(fallback);
     }
 }
+
+/// Configuration for a Circuit Breaker.
+///
+/// The `CircuitBreakerConfig` struct holds the static configuration parameters for a circuit breaker.
+/// It defines how the circuit breaker behaves during different states (Closed, Open, and HalfOpen).
+/// These settings determine the thresholds for failures, successes, and the cooldown period for recovery attempts.
+///
+/// Use this struct to configure and initialize a `CircuitBreaker` instance with specific settings.
+///
+/// # Fields
+/// - `failure_threshold`: The maximum number of consecutive failures before the circuit breaker transitions
+///   from `Close` to `Open`. This threshold determines how sensitive the circuit breaker is to failures.
+/// - `success_threshold`: The number of successful operations required in the `HalfOpen` state before
+///   transitioning back to `Close`. This determines how many recovery attempts the system will test before
+///   considering the service restored.
+/// - `cooldown_period`: The duration to wait in the `Open` state before transitioning to `HalfOpen` to test
+///   if the system has recovered. This period allows the failing system time to stabilize and prevents
+///   immediate retries.
+///
+/// # Example
+/// ```
+/// use std::time::Duration;
+/// use resilient_rs::config::CircuitBreakerConfig;
+///
+/// let config = CircuitBreakerConfig::new(3, 5, Duration::from_secs(10));
+/// println!("{:?}", config);
+/// ```
+
+#[derive(Debug, Clone, Copy)]
+pub struct CircuitBreakerConfig {
+    pub failure_threshold: usize,
+    pub success_threshold: usize,
+    pub cooldown_period: Duration,
+}
+
+impl Default for CircuitBreakerConfig {
+    /// # Default Configuration
+    /// The default configuration sets:
+    /// - `failure_threshold` to 5 (max failures before opening the circuit)
+    /// - `success_threshold` to 2 (successes required to close the circuit from HalfOpen)
+    /// - `cooldown_period` to 2 seconds (time to wait before testing recovery)
+    fn default() -> Self {
+        Self {
+            success_threshold: 2,
+            failure_threshold: 5,
+            cooldown_period: Duration::from_secs(2),
+        }
+    }
+}
+
+impl CircuitBreakerConfig {
+    /// Creates a new `CircuitBreakerConfig` instance with the specified settings.
+    ///
+    /// This method constructs a configuration object for a circuit breaker based on the provided thresholds
+    /// and cooldown period. The configuration defines how the circuit breaker will behave during operation.
+    ///
+    /// # Parameters
+    /// - `success_threshold`: The number of successful operations required in the `HalfOpen` state
+    ///   to transition back to `Close`. This must be greater than 0 for meaningful recovery.
+    /// - `failure_threshold`: The number of consecutive failures in the `Close` state that will trigger
+    ///   a transition to `Open`. This must be greater than 0.
+    /// - `cooldown_period`: The duration to wait in the `Open` state before moving to `HalfOpen` to test
+    ///   recovery. Should be long enough to allow the system to stabilize and prevent immediate retries.
+    ///
+    /// # Returns
+    /// A new `CircuitBreakerConfig` instance with the provided parameters.
+    ///
+    /// # Panics
+    /// This function will panic if any parameter is invalid (e.g., zero or negative values for thresholds).
+    ///
+    /// # Example
+    /// ```
+    /// use std::time::Duration;
+    /// use resilient_rs::config::CircuitBreakerConfig;
+    /// let config = CircuitBreakerConfig::new(3, 5, Duration::from_secs(10));
+    /// assert_eq!(config.failure_threshold, 5);
+    /// ```
+    pub fn new(
+        success_threshold: usize,
+        failure_threshold: usize,
+        cooldown_period: Duration,
+    ) -> Self {
+        assert!(
+            success_threshold > 0,
+            "success_threshold must be greater than 0"
+        );
+        assert!(
+            failure_threshold > 0,
+            "failure_threshold must be greater than 0"
+        );
+        assert!(
+            cooldown_period > Duration::ZERO,
+            "cooldown_period must be non-zero"
+        );
+
+        Self {
+            failure_threshold,
+            success_threshold,
+            cooldown_period,
+        }
+    }
+
+    /// Builder-style setter for `failure_threshold`.
+    ///
+    /// This method allows you to modify the `failure_threshold` value after the initial configuration.
+    /// It enables more flexible configuration using a builder pattern.
+    ///
+    /// # Parameters
+    /// - `threshold`: The number of failures required to trigger a transition to `Open`. Must be greater than 0.
+    ///
+    /// # Returns
+    /// A new `CircuitBreakerConfig` instance with the updated `failure_threshold`.
+    ///
+    /// # Example
+    /// ```
+    /// use resilient_rs::config::CircuitBreakerConfig;
+    /// let config = CircuitBreakerConfig::default().with_failure_threshold(3);
+    /// assert_eq!(config.failure_threshold, 3);
+    /// ```
+    pub fn with_failure_threshold(mut self, threshold: usize) -> Self {
+        assert!(threshold > 0, "failure_threshold must be greater than 0");
+        self.failure_threshold = threshold;
+        self
+    }
+
+    /// Builder-style setter for `success_threshold`.
+    ///
+    /// This method allows you to modify the `success_threshold` value after the initial configuration.
+    /// It enables more flexible configuration using a builder pattern.
+    ///
+    /// # Parameters
+    /// - `threshold`: The number of successes required to close the circuit from the `HalfOpen` state. Must be greater than 0.
+    ///
+    /// # Returns
+    /// A new `CircuitBreakerConfig` instance with the updated `success_threshold`.
+    ///
+    /// # Example
+    /// ```
+    /// use resilient_rs::config::CircuitBreakerConfig;
+    /// let config = CircuitBreakerConfig::default().with_success_threshold(4);
+    /// assert_eq!(config.success_threshold, 4);
+    /// ```
+    pub fn with_success_threshold(mut self, threshold: usize) -> Self {
+        assert!(threshold > 0, "success_threshold must be greater than 0");
+        self.success_threshold = threshold;
+        self
+    }
+
+    /// Builder-style setter for `cooldown_period`.
+    ///
+    /// This method allows you to modify the `cooldown_period` value after the initial configuration.
+    /// It enables more flexible configuration using a builder pattern.
+    ///
+    /// # Parameters
+    /// - `period`: The duration to wait before testing the recovery of the system. Must be greater than 0.
+    ///
+    /// # Returns
+    /// A new `CircuitBreakerConfig` instance with the updated `cooldown_period`.
+    ///
+    /// # Example
+    /// ```
+    /// use resilient_rs::config::CircuitBreakerConfig;
+    /// let config = CircuitBreakerConfig::default().with_cooldown_period(std::time::Duration::from_secs(5));
+    /// assert_eq!(config.cooldown_period, std::time::Duration::from_secs(5));
+    /// ```
+    pub fn with_cooldown_period(mut self, period: Duration) -> Self {
+        assert!(period > Duration::ZERO, "cooldown_period must be non-zero");
+        self.cooldown_period = period;
+        self
+    }
+}

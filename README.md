@@ -14,22 +14,22 @@
 <i>💖 Loved the work? [Subscribe to my YouTube channel](https://www.youtube.com/@Semicolon10) or consider giving this repository a ⭐ to show your support!</i>
 </div>
 
----
 
 ## 🚀 Feature Overview
 
 Here’s a snapshot of what this library brings to the table—resilience, reliability, and a sprinkle of magic! Check out the features, their details, and where they stand:
 
-| **Feature**          | **Details**                                   | **Status**          |
-|----------------------|-----------------------------------------------|---------------------|
-| **🔄 Retry**         | Basic retry functionality—keeps trying!      | ✅ **Stable**       |
-|                      | With Backoff (exponential)—smart delays       | ✅ **Stable**       |
-|                      | With Fallback—graceful recovery              | ✅ **Stable**       |
-| **⚡ Execute**       | Run ops with timeout & fallback—like a pro   | ✅ **Stable**       |
-| **🛡️ Circuit Breaker** | Stops cascading chaos in its tracks         | 🛠️ **Planned**     |
-| **📦 Memoize**       | Cache it up for the future                   | 🛠️ **Planned**     |
-| **📜 Logging**       | Debug like a detective—full support          | ✅ **Stable**       |
-| **📚 More Examples** | Extra demos to spark your imagination        | 🛠️ **Planned**     |
+| **Feature**        | **Details**                                | **Status**          |
+|--------------------|--------------------------------------------|---------------------|
+| **🔄 Retry**       | Basic retry functionality—keeps trying!    | ✅ **Stable**       |
+|                    | With Backoff (exponential)—smart delays    | ✅ **Stable**       |
+|                    | With Fallback—graceful recovery            | ✅ **Stable**       |
+| **⚡ Execute**     | Run ops with timeout & fallback—like a pro | ✅ **Stable**       |
+| **🧵 Parallel Exec**       | Concurrent task execution with limits      | 🛠️ **Planned**       |
+| 🛡️ Circuit Breaker | Stops cascading chaos in its tracks | ⚠️ Thread Unsafe |
+| **📦 Memoize**     | Future Cache                               | 🛠️ **Planned**     |
+| **📜 Logging**     | Debug like a detective—full support        | ✅ **Stable**       |
+| **📚 More Examples** | Extra demos to spark your imagination      | 🛠️ **Planned**     |
 
 ### Notes:
 - **Supported Contexts**: All features work seamlessly for both **synchronous** and **asynchronous** operations—flexibility is our middle name!
@@ -43,7 +43,6 @@ This library plays nice with your favorite Rust async runtimes. The `resilient_r
 - **[futures](https://crates.io/crates/futures)** - Stick to the basics with the core futures crate and blocking execution
 
 ---
-
 ## 📦 How to Use `resilient-rs`
 
 Here’s a quick example of how to use the `resilient-rs` crate in your Rust project.
@@ -54,7 +53,7 @@ Add the following line to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-resilient-rs = "0.4.5" # Replace with the latest version
+resilient-rs = "0.4.6" # Replace with the latest version
 ```
 OR
 ```bash
@@ -67,4 +66,4 @@ Hover over the function you want to use in your IDE to see code documentation ex
 
 ## 🚀 Contributing
 
-We welcome your contributions! Please check out our [Contributing Guidelines](CONTRIBUTING.md) to get started.
+We welcome your contributions! Please check out our [Contributing Guidelines](https://github.com/semicolon-10/resilient-rs/blob/main/CONTRIBUTING.md) to get started.
