@@ -338,7 +338,7 @@ impl CircuitBreaker {
     /// - `Ok(T)` if the operation succeeds, where `T` is the operation’s return type.
     /// - `Err(Box<dyn Error>)` if the operation fails or the breaker is `Open`.
     /// ```
-    pub async fn call<F, Fut, T>(&mut self, mut operation: F) -> Result<T, Box<dyn Error>>
+    pub async fn run<F, Fut, T>(&mut self, mut operation: F) -> Result<T, Box<dyn Error>>
     where
         F: FnMut() -> Fut,
         Fut: Future<Output = Result<T, Box<dyn Error>>>,
@@ -766,7 +766,7 @@ mod tests {
             let config = CircuitBreakerConfig::new(2, 3, Duration::from_secs(1));
             let mut cb = CircuitBreaker::new(config);
             let result = block_on(async {
-                cb.call(|| async { Ok::<_, Box<dyn Error>>("Success") })
+                cb.run(|| async { Ok::<_, Box<dyn Error>>("Success") })
                     .await
             });
             assert!(result.is_ok());
@@ -781,7 +781,7 @@ mod tests {
             // Trigger Open state
             for _ in 0..3 {
                 let _ =
-                    block_on(async { cb.call(|| async { Err::<(), _>(Box::from("Fail")) }).await });
+                    block_on(async { cb.run(|| async { Err::<(), _>(Box::from("Fail")) }).await });
             }
             assert_eq!(cb.state, CircuitBreakerState::Open);
             // Wait for cooldown
@@ -789,7 +789,7 @@ mod tests {
             // Transition to HalfOpen and succeed twice
             for _ in 0..2 {
                 let result = block_on(async {
-                    cb.call(|| async { Ok::<_, Box<dyn Error>>("Success") })
+                    cb.run(|| async { Ok::<_, Box<dyn Error>>("Success") })
                         .await
                 });
                 assert!(result.is_ok());
