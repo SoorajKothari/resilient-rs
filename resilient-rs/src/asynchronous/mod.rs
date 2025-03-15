@@ -1,5 +1,3 @@
-mod strategies;
-
 use crate::config::{CircuitBreakerConfig, ExecConfig, RetryConfig};
 use async_std::future::timeout;
 use async_std::task::sleep;

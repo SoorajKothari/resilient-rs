@@ -1,25 +1,7 @@
 use std::error::Error;
 use std::time::Duration;
+use crate::strategies::RetryStrategy;
 
-/// Defines the retry strategy to use when scheduling retry attempts.
-///
-/// This enum specifies how delays between retries are calculated.
-#[derive(Debug)]
-pub enum RetryStrategy {
-    /// A linear retry strategy where the delay between retries remains constant.
-    ///
-    /// For example, if the delay is set to 2 seconds, each retry will wait exactly 2 seconds.
-    Linear,
-    /// An exponential backoff strategy where the delay increases exponentially with each retry.
-    ///
-    /// For example, with a base delay of 2 seconds, retries might wait 2s, 4s, 8s, etc.
-    ExponentialBackoff,
-}
-
-/// Configuration for retrying operations.
-///
-/// This struct defines the parameters for retrying an operation, including
-/// the maximum number of attempts, the delay between retries, and the retry strategy.
 #[derive(Debug)]
 pub struct RetryConfig<E> {
     /// The maximum number of retry attempts.

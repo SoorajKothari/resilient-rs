@@ -1,5 +1,25 @@
-use crate::config::RetryStrategy;
 use std::time::Duration;
+
+
+/// Defines the retry strategy to use when scheduling retry attempts.
+///
+/// This enum specifies how delays between retries are calculated.
+#[derive(Debug)]
+pub enum RetryStrategy {
+    /// A linear retry strategy where the delay between retries remains constant.
+    ///
+    /// For example, if the delay is set to 2 seconds, each retry will wait exactly 2 seconds.
+    Linear,
+    /// An exponential backoff strategy where the delay increases exponentially with each retry.
+    ///
+    /// For example, with a base delay of 2 seconds, retries might wait 2s, 4s, 8s, etc.
+    ExponentialBackoff,
+}
+
+/// Configuration for retrying operations.
+///
+/// This struct defines the parameters for retrying an operation, including
+/// the maximum number of attempts, the delay between retries, and the retry strategy.
 
 impl RetryStrategy {
     /// Calculates the delay duration for a specific retry attempt based on the retry strategy.
@@ -24,11 +44,9 @@ impl RetryStrategy {
     /// - For `ExponentialBackoff`, the delay grows as a power of 2 based on the attempt number.
     ///   Be cautious with large `attempt` values, as the result could exceed `Duration` limits.
     /// - The `attempt` parameter is assumed to be non-negative; negative values are not handled.
-    pub fn calculate_delay(&self, base_delay: Duration, attempt: usize) -> Duration {
+    crate fn calculate_delay(&self, base_delay: Duration, attempt: usize) -> Duration {
         match self {
-            RetryStrategy::Linear => {
-                base_delay
-            }
+            RetryStrategy::Linear => base_delay,
             RetryStrategy::ExponentialBackoff => {
                 if attempt == 0 {
                     base_delay
