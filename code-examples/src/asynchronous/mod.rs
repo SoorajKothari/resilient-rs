@@ -1,11 +1,15 @@
-use async_std::net::TcpStream;
 use std::io::Error;
+use std::time::Duration;
 
 use async_std::io::{ReadExt, WriteExt};
+use async_std::net::TcpStream;
 use async_std::task::sleep;
-use resilient_rs::asynchronous::{execute_with_fallback, retry, retry_with_exponential_backoff};
-use resilient_rs::config::{ExecConfig, RetryConfig};
-use std::time::Duration;
+use rand::{Rng, rng};
+
+use resilient_rs::asynchronous::{
+    CircuitBreaker, execute_with_fallback, retry, retry_with_exponential_backoff,
+};
+use resilient_rs::config::{CircuitBreakerConfig, ExecConfig, RetryConfig};
 
 async fn send() -> Result<String, Error> {
     let mut stream = TcpStream::connect("example.com:80").await?;
@@ -83,4 +87,35 @@ pub async fn example_execute_with_fallback() {
         Ok(value) => println!("Without fallback result: {}", value),
         Err(e) => println!("Without fallback error: {}", e),
     }
+}
+
+// Example 4: Circuit Breaker
+async fn dangerous_call() -> Result<(), Box<dyn std::error::Error>> {
+    sleep(Duration::from_millis(100)).await;
+    if rng().random_range(0..2) == 0 {
+        // Updated rng() to thread_rng()
+        return Err("Operation failed".into()); // Convert string to Box<dyn Error>
+    }
+    Ok(())
+}
+
+pub async fn circuit_breaker() -> Result<(), Box<dyn std::error::Error>> {
+    let circuit_breaker_conf = CircuitBreakerConfig::new(
+        2,                          // max failures
+        3,                          // reset attempts
+        Duration::from_millis(300), // timeout
+    );
+
+    let mut cb = CircuitBreaker::new(circuit_breaker_conf);
+
+    for n in 1..10 {
+        let result = cb.run(|| async { dangerous_call().await }).await;
+
+        match result {
+            Ok(()) => println!("Call {} succeeded", n),
+            Err(e) => println!("Call {} failed: {:?}", n, e),
+        }
+    }
+
+    Ok(())
 }
