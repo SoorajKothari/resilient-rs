@@ -27,15 +27,12 @@ impl RetryStrategy {
     pub fn calculate_delay(&self, base_delay: Duration, attempt: usize) -> Duration {
         match self {
             RetryStrategy::Linear => {
-                // Linear strategy: delay remains constant regardless of attempt number
                 base_delay
             }
             RetryStrategy::ExponentialBackoff => {
                 if attempt == 0 {
-                    // For the initial attempt (if applicable), use the base delay directly
                     base_delay
                 } else {
-                    // Exponential backoff: multiply base delay by 2^(attempt-1)
                     base_delay * 2u32.pow((attempt - 1) as u32)
                 }
             }
