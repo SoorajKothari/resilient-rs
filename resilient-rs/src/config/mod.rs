@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 /// Configuration for retrying operations.
 ///
@@ -176,5 +176,54 @@ where
     /// * `fallback` - Synchronous function returning a `Result` with matching types
     pub fn with_fallback(&mut self, fallback: fn() -> Result<T, Box<dyn Error>>) {
         self.fallback = Some(fallback);
+    }
+}
+
+/// Configuration for a circuit breaker.
+///
+/// The `CircuitBreakerConfig` struct holds the static configuration parameters for a circuit breaker,
+/// which are used to define its behavior when managing fault tolerance. This includes thresholds for
+/// failures and successes, as well as a cooldown period for recovery attempts.
+///
+/// Use this struct to initialize a `CircuitBreaker` instance with specific settings.
+///
+/// # Fields
+/// - `failure_threshold`: Maximum number of failures before the circuit breaker transitions from `Close` to `Open`.
+/// - `success_threshold`: Number of successes required in the `HalfOpen` state to transition back to `Close`.
+/// - `cooldown_period`: Duration to wait in the `Open` state before transitioning to `HalfOpen`.
+#[derive(Debug)]
+pub struct CircuitBreakerConfig {
+    pub failure_threshold: usize,
+    pub success_threshold: usize,
+    pub cooldown_period: Duration,
+}
+
+impl CircuitBreakerConfig {
+    /// Creates a new `CircuitBreakerConfig` instance with the specified settings.
+    ///
+    /// This method constructs a configuration object that can be used to initialize a circuit breaker.
+    /// The provided thresholds and cooldown period dictate how the breaker will respond to successes and failures.
+    ///
+    /// # Parameters
+    /// - `success_threshold`: The number of successful operations required in the `HalfOpen` state
+    ///   to transition back to `Close`. Must be greater than 0 for meaningful recovery.
+    /// - `failure_threshold`: The number of consecutive failures in the `Close` state that will
+    ///   trigger a transition to `Open`. Must be greater than 0.
+    /// - `cooldown_period`: The duration to wait in the `Open` state before moving to `HalfOpen`
+    ///   to test recovery. Should be long enough to allow the failing system to stabilize.
+    ///
+    /// # Returns
+    /// A new `CircuitBreakerConfig` instance with the provided parameters.
+    /// ```
+    pub fn new(
+        success_threshold: usize,
+        failure_threshold: usize,
+        cooldown_period: Duration,
+    ) -> Self {
+        CircuitBreakerConfig {
+            failure_threshold,
+            success_threshold,
+            cooldown_period,
+        }
     }
 }
