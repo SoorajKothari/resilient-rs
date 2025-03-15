@@ -20,16 +20,17 @@
 
 Here’s a snapshot of what this library brings to the table—resilience, reliability, and a sprinkle of magic! Check out the features, their details, and where they stand:
 
-| **Feature**          | **Details**                                   | **Status**          |
-|----------------------|-----------------------------------------------|---------------------|
-| **🔄 Retry**         | Basic retry functionality—keeps trying!      | ✅ **Stable**       |
-|                      | With Backoff (exponential)—smart delays       | ✅ **Stable**       |
-|                      | With Fallback—graceful recovery              | ✅ **Stable**       |
-| **⚡ Execute**       | Run ops with timeout & fallback—like a pro   | ✅ **Stable**       |
-| **🛡️ Circuit Breaker** | Stops cascading chaos in its tracks         | 🛠️ **Planned**     |
-| **📦 Memoize**       | Cache it up for the future                   | 🛠️ **Planned**     |
-| **📜 Logging**       | Debug like a detective—full support          | ✅ **Stable**       |
-| **📚 More Examples** | Extra demos to spark your imagination        | 🛠️ **Planned**     |
+| **Feature**        | **Details**                                | **Status**          |
+|--------------------|--------------------------------------------|---------------------|
+| **🔄 Retry**       | Basic retry functionality—keeps trying!    | ✅ **Stable**       |
+|                    | With Backoff (exponential)—smart delays    | ✅ **Stable**       |
+|                    | With Fallback—graceful recovery            | ✅ **Stable**       |
+| **⚡ Execute**     | Run ops with timeout & fallback—like a pro | ✅ **Stable**       |
+| **🧵 Parallel Exec**       | Concurrent task execution with limits      | 🛠️ **Planned**       |
+| **🛡️ Circuit Breaker** | Stops cascading chaos in its tracks        | ✅ **Stable**    |
+| **📦 Memoize**     | Future Cache                               | 🛠️ **Planned**     |
+| **📜 Logging**     | Debug like a detective—full support        | ✅ **Stable**       |
+| **📚 More Examples** | Extra demos to spark your imagination      | 🛠️ **Planned**     |
 
 ### Notes:
 - **Supported Contexts**: All features work seamlessly for both **synchronous** and **asynchronous** operations—flexibility is our middle name!
