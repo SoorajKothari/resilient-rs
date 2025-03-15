@@ -44,7 +44,7 @@ impl RetryStrategy {
     /// - For `ExponentialBackoff`, the delay grows as a power of 2 based on the attempt number.
     ///   Be cautious with large `attempt` values, as the result could exceed `Duration` limits.
     /// - The `attempt` parameter is assumed to be non-negative; negative values are not handled.
-    crate fn calculate_delay(&self, base_delay: Duration, attempt: usize) -> Duration {
+    pub(crate) fn calculate_delay(&self, base_delay: Duration, attempt: usize) -> Duration {
         match self {
             RetryStrategy::Linear => base_delay,
             RetryStrategy::ExponentialBackoff => {

@@ -130,7 +130,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::RetryStrategy::{ExponentialBackoff, Linear};
+    use crate::strategies::RetryStrategy::{ExponentialBackoff, Linear};
     use std::cell::RefCell;
     use std::fmt::Error;
     use std::sync::atomic::{AtomicUsize, Ordering};

@@ -393,8 +393,9 @@ mod tests {
 
     // Suite for `retry` function
     mod retry_tests {
+        use crate::strategies::RetryStrategy::Linear;
         use super::*;
-        use crate::config::RetryStrategy::Linear;
+
 
         #[test]
         fn test_retry_success_first_try_with_block_on() {
@@ -528,8 +529,9 @@ mod tests {
 
     // Suite for `retry_with_exponential_backoff` function
     mod retry_with_exponential_backoff_tests {
+        use crate::strategies::RetryStrategy::ExponentialBackoff;
         use super::*;
-        use crate::config::RetryStrategy::ExponentialBackoff;
+
 
         #[test]
         fn test_retry_with_exponential_backoff_success_first_try() {
