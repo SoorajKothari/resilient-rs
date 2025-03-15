@@ -1,3 +1,5 @@
+mod strategies;
+
 use crate::config::{CircuitBreakerConfig, ExecConfig, RetryConfig};
 use async_std::future::timeout;
 use async_std::task::sleep;
@@ -54,6 +56,7 @@ where
     Fut: Future<Output = Result<T, E>>,
 {
     let mut attempts = 0;
+    let mut delay = retry_config.delay;
 
     loop {
         match operation().await {
@@ -68,9 +71,10 @@ where
                         "Operation failed (attempt {}/{}), retrying after {:?}...",
                         attempts + 1,
                         retry_config.max_attempts,
-                        retry_config.delay
+                        delay
                     );
-                    sleep(retry_config.delay).await;
+                    sleep(delay).await;
+                    delay = retry_config.strategy.calculate_delay(delay, attempts + 1);
                 } else {
                     warn!(
                         "Operation failed (attempt {}/{}), not retryable, giving up.",
@@ -93,51 +97,10 @@ where
     }
 }
 
-/// Retries an asynchronous operation using exponential backoff.
-///
-/// This function repeatedly attempts to execute the provided asynchronous operation
-/// until it either succeeds or reaches the maximum number of retry attempts.
-///
-/// # Parameters
-/// - `operation`: A function that returns a `Future` resolving to a `Result<T, E>`.
-/// - `retry_config`: A reference to a `RetryConfig` struct specifying the delay and maximum attempts.
-///
-/// # Returns
-/// - `Ok(T)`: If the operation succeeds within the allowed retry attempts.
-/// - `Err(E)`: If the operation continues to fail after the maximum retry attempts.
-///
-/// # Behavior
-/// - Starts with an initial delay specified in `retry_config.delay`.
-/// - On each failure, logs a warning and doubles the delay before retrying.
-/// - Stops retrying once `retry_config.max_attempts` is reached.
-///
-/// # Example
-/// ```rust
-/// use std::time::Duration;
-/// use resilient_rs::asynchronous::retry_with_exponential_backoff;
-/// use resilient_rs::config::RetryConfig;
-/// use async_std::task::block_on;
-///
-///
-/// async fn my_operation() -> Result<(), &'static str> {
-///     Err("Some error")
-/// }
-///
-///
-/// fn main() {
-///     let config = RetryConfig::default();
-///
-///     let result = block_on(async {  retry_with_exponential_backoff(my_operation, &config).await });
-///     match result {
-///         Ok(_) => println!("Success!"),
-///         Err(e) => println!("Failed: {}", e),
-///     }
-/// }
-/// ```
-///
-/// # Notes
-/// - The delay is multiplied by 2 after each failed attempt.
-/// - The function logs warnings for failed attempts and final failure.
+#[deprecated(
+    since = "0.4.7",
+    note = "use `retry` with `ExponentialBackoff` this will be removed in upcoming versions"
+)]
 pub async fn retry_with_exponential_backoff<F, Fut, T, E>(
     mut operation: F,
     retry_config: &RetryConfig<E>,
@@ -433,6 +396,7 @@ mod tests {
     // Suite for `retry` function
     mod retry_tests {
         use super::*;
+        use crate::config::RetryStrategy::Linear;
 
         #[test]
         fn test_retry_success_first_try_with_block_on() {
@@ -440,6 +404,7 @@ mod tests {
                 max_attempts: 3,
                 delay: Duration::from_millis(10),
                 retry_condition: None,
+                strategy: Linear,
             };
 
             let attempts = Arc::new(Mutex::new(0));
@@ -464,6 +429,7 @@ mod tests {
                 max_attempts: 5,
                 delay: Duration::from_millis(10),
                 retry_condition: None,
+                strategy: Linear,
             };
 
             let attempts = Arc::new(Mutex::new(0));
@@ -492,6 +458,7 @@ mod tests {
                 max_attempts: 3,
                 delay: Duration::from_millis(10),
                 retry_condition: None,
+                strategy: Linear,
             };
 
             let attempts = Arc::new(Mutex::new(0));
@@ -516,6 +483,7 @@ mod tests {
                 max_attempts: 3,
                 delay: Duration::from_millis(10),
                 retry_condition: Some(|e: &DummyError| e.0.contains("transient")),
+                strategy: Linear,
             };
 
             let attempts = Arc::new(Mutex::new(0));
@@ -540,6 +508,7 @@ mod tests {
                 max_attempts: 3,
                 delay: Duration::from_millis(10),
                 retry_condition: Some(|e: &DummyError| e.0.contains("transient")),
+                strategy: Linear,
             };
 
             let attempts = Arc::new(Mutex::new(0));
@@ -562,6 +531,7 @@ mod tests {
     // Suite for `retry_with_exponential_backoff` function
     mod retry_with_exponential_backoff_tests {
         use super::*;
+        use crate::config::RetryStrategy::ExponentialBackoff;
 
         #[test]
         fn test_retry_with_exponential_backoff_success_first_try() {
@@ -569,6 +539,7 @@ mod tests {
                 max_attempts: 3,
                 delay: Duration::from_millis(10),
                 retry_condition: None,
+                strategy: ExponentialBackoff,
             };
 
             let attempts = Arc::new(Mutex::new(0));
@@ -582,7 +553,7 @@ mod tests {
                 }
             };
 
-            let result = block_on(retry_with_exponential_backoff(operation, &config));
+            let result = block_on(retry(operation, &config));
             assert_eq!(result, Ok("successful"));
             assert_eq!(*attempts.lock().unwrap(), 1);
         }
@@ -593,6 +564,7 @@ mod tests {
                 max_attempts: 5,
                 delay: Duration::from_millis(10),
                 retry_condition: None,
+                strategy: ExponentialBackoff,
             };
 
             let attempts = Arc::new(Mutex::new(0));
@@ -610,7 +582,7 @@ mod tests {
                 }
             };
 
-            let result = block_on(retry_with_exponential_backoff(operation, &config));
+            let result = block_on(retry(operation, &config));
             assert_eq!(result, Ok("eventual success"));
             assert_eq!(*attempts.lock().unwrap(), 4);
         }
@@ -621,6 +593,7 @@ mod tests {
                 max_attempts: 3,
                 delay: Duration::from_millis(10),
                 retry_condition: None,
+                strategy: ExponentialBackoff,
             };
 
             let attempts = Arc::new(Mutex::new(0));
@@ -634,8 +607,7 @@ mod tests {
                 }
             };
 
-            let result: Result<(), DummyError> =
-                block_on(retry_with_exponential_backoff(operation, &config));
+            let result: Result<(), DummyError> = block_on(retry(operation, &config));
             assert_eq!(result, Err(DummyError("always fail")));
             assert_eq!(*attempts.lock().unwrap(), config.max_attempts);
         }
@@ -646,6 +618,7 @@ mod tests {
                 max_attempts: 5,
                 delay: Duration::from_millis(10),
                 retry_condition: Some(|e: &DummyError| e.0.contains("405")),
+                strategy: ExponentialBackoff,
             };
 
             let attempts = Arc::new(Mutex::new(0));
@@ -663,7 +636,7 @@ mod tests {
                 }
             };
 
-            let result = block_on(retry_with_exponential_backoff(operation, &config));
+            let result = block_on(retry(operation, &config));
             assert_eq!(result, Err(DummyError("temporary fail")));
             assert_eq!(*attempts.lock().unwrap(), 1);
         }
