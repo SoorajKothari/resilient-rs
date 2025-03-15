@@ -14,7 +14,6 @@
 <i>💖 Loved the work? [Subscribe to my YouTube channel](https://www.youtube.com/@Semicolon10) or consider giving this repository a ⭐ to show your support!</i>
 </div>
 
----
 
 ## 🚀 Feature Overview
 
@@ -44,7 +43,6 @@ This library plays nice with your favorite Rust async runtimes. The `resilient_r
 - **[futures](https://crates.io/crates/futures)** - Stick to the basics with the core futures crate and blocking execution
 
 ---
-
 ## 📦 How to Use `resilient-rs`
 
 Here’s a quick example of how to use the `resilient-rs` crate in your Rust project.
