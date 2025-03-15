@@ -274,29 +274,26 @@ enum CircuitBreakerState {
 /// A circuit breaker for managing fault tolerance in systems.
 ///
 /// The `CircuitBreaker` struct implements the circuit breaker pattern to prevent cascading failures
-/// by monitoring successes and failures of operations. It uses a provided `CircuitBreakerConfig`
-/// to define thresholds and cooldown behavior, transitioning between states (`Close`, `Open`, `HalfOpen`)
+/// by monitoring the success and failure of operations. It uses a provided `CircuitBreakerConfig`
+/// to define thresholds and cooldown behavior, transitioning between states (`Closed`, `Open`, `HalfOpen`)
 /// based on operation outcomes.
 ///
 /// # Fields
-/// - `config`: Reference to the configuration defining thresholds and cooldown period.
-/// - `state`: The current state of the circuit breaker (`Close`, `Open`, or `HalfOpen`).
-/// - `failure_count`: Number of consecutive failures since the last state change.
-/// - `success_count`: Number of consecutive successes in the `HalfOpen` state.
-/// - `last_failure_time`: Timestamp of the most recent failure, if any, used to enforce the cooldown period.
-///
-/// # Lifetime
-/// The `'a` lifetime ties the `CircuitBreaker` to the lifetime of its `config` reference.
+/// * `config` - Configuration defining thresholds and cooldown period
+/// * `state` - Current state of the circuit breaker (`Closed`, `Open`, or `HalfOpen`)
+/// * `failure_count` - Number of consecutive failures since the last state change
+/// * `success_count` - Number of consecutive successes in the `HalfOpen` state
+/// * `last_failure_time` - Timestamp of the most recent failure (if any), used to enforce cooldown period
 /// ```
-pub struct CircuitBreaker<'a> {
-    config: &'a CircuitBreakerConfig,
+pub struct CircuitBreaker {
+    config: CircuitBreakerConfig,
     state: CircuitBreakerState,
     failure_count: usize,
     success_count: usize,
     last_failure_time: Option<Instant>,
 }
 
-impl<'a> CircuitBreaker<'a> {
+impl CircuitBreaker {
     /// Creates a new `CircuitBreaker` instance with the given configuration.
     ///
     /// Initializes the circuit breaker in the `Close` state, ready to handle operations.
@@ -315,9 +312,9 @@ impl<'a> CircuitBreaker<'a> {
     /// use resilient_rs::config::CircuitBreakerConfig;
     ///
     /// let config = CircuitBreakerConfig::new(2, 3, Duration::from_secs(5));
-    /// let cb = CircuitBreaker::new(&config);
+    /// let cb = CircuitBreaker::new(config);
     /// ```
-    pub fn new(config: &'a CircuitBreakerConfig) -> Self {
+    pub fn new(config: CircuitBreakerConfig) -> Self {
         CircuitBreaker {
             config,
             state: CircuitBreakerState::Close,
@@ -758,6 +755,47 @@ mod tests {
             };
             let result = block_on(execute_with_fallback(operation(), &config));
             assert_eq!(result.unwrap(), "just in time");
+        }
+    }
+
+    mod circuit_breaker_tests {
+        use super::*;
+
+        #[test]
+        fn test_success_keeps_closed() {
+            let config = CircuitBreakerConfig::new(2, 3, Duration::from_secs(1));
+            let mut cb = CircuitBreaker::new(config);
+            let result = block_on(async {
+                cb.call(|| async { Ok::<_, Box<dyn Error>>("Success") })
+                    .await
+            });
+            assert!(result.is_ok());
+            assert_eq!(cb.state, CircuitBreakerState::Close);
+            assert_eq!(cb.failure_count, 0);
+        }
+
+        #[test]
+        fn test_half_open_to_close() {
+            let config = CircuitBreakerConfig::new(2, 3, Duration::from_millis(100));
+            let mut cb = CircuitBreaker::new(config);
+            // Trigger Open state
+            for _ in 0..3 {
+                let _ =
+                    block_on(async { cb.call(|| async { Err::<(), _>(Box::from("Fail")) }).await });
+            }
+            assert_eq!(cb.state, CircuitBreakerState::Open);
+            // Wait for cooldown
+            block_on(sleep(Duration::from_millis(150)));
+            // Transition to HalfOpen and succeed twice
+            for _ in 0..2 {
+                let result = block_on(async {
+                    cb.call(|| async { Ok::<_, Box<dyn Error>>("Success") })
+                        .await
+                });
+                assert!(result.is_ok());
+            }
+            assert_eq!(cb.state, CircuitBreakerState::Close);
+            assert_eq!(cb.success_count, 2);
         }
     }
 }
