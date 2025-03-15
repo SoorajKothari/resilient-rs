@@ -67,4 +67,4 @@ Hover over the function you want to use in your IDE to see code documentation ex
 
 ## 🚀 Contributing
 
-We welcome your contributions! Please check out our [Contributing Guidelines](CONTRIBUTING.md) to get started.
+We welcome your contributions! Please check out our [Contributing Guidelines](https://github.com/semicolon-10/resilient-rs/blob/main/CONTRIBUTING.md) to get started.
