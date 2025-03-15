@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 /// Configuration for retrying operations.
 ///
