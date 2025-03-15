@@ -1,6 +1,6 @@
+use crate::strategies::RetryStrategy;
 use std::error::Error;
 use std::time::Duration;
-use crate::strategies::RetryStrategy;
 
 #[derive(Debug)]
 pub struct RetryConfig<E> {

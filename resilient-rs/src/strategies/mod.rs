@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-
 /// Defines the retry strategy to use when scheduling retry attempts.
 ///
 /// This enum specifies how delays between retries are calculated.
