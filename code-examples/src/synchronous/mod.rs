@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use resilient_rs::config::RetryConfig;
-use resilient_rs::config::RetryStrategy::{ExponentialBackoff, Linear};
+use resilient_rs::strategies::RetryStrategy::{ExponentialBackoff, Linear};
 use resilient_rs::synchronous::retry;
 
 // Example 1: Using retry() with a simple failing operation

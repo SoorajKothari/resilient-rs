@@ -7,8 +7,8 @@ use async_std::task::sleep;
 use rand::{Rng, rng};
 
 use resilient_rs::asynchronous::{CircuitBreaker, execute_with_fallback, retry};
-use resilient_rs::config::RetryStrategy::ExponentialBackoff;
 use resilient_rs::config::{CircuitBreakerConfig, ExecConfig, RetryConfig};
+use resilient_rs::strategies::RetryStrategy::ExponentialBackoff;
 
 async fn send() -> Result<String, Error> {
     let mut stream = TcpStream::connect("example.com:80").await?;

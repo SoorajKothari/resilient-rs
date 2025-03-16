@@ -16,7 +16,7 @@ use std::thread::sleep;
 /// ```
 /// use std::time::Duration;
 /// use resilient_rs::config::RetryConfig;
-/// use resilient_rs::config::RetryStrategy::Linear;
+/// use resilient_rs::strategies::RetryStrategy::Linear;
 /// use resilient_rs::synchronous::retry;
 ///
 /// let retry_config = RetryConfig { max_attempts: 3, delay: Duration::from_millis(500), retry_condition: None, strategy: Linear };
@@ -329,7 +329,7 @@ mod tests {
         let config = RetryConfig::new(5, Duration::from_millis(1), ExponentialBackoff)
             .with_retry_condition(|e: &String| e.contains("transient"));
 
-        let result = retry_with_exponential_backoff(
+        let result = retry(
             || {
                 let mut attempts = attempts.borrow_mut();
                 *attempts += 1;

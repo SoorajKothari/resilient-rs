@@ -78,8 +78,9 @@ impl<E> RetryConfig<E> {
     /// # Examples
     /// ```
     /// use std::time::Duration;
-    /// use resilient_rs::config::{RetryConfig, RetryStrategy};
-    /// let config = RetryConfig::new(3, Duration::from_secs(1), RetryStrategy::Linear);
+    /// use resilient_rs::config::RetryConfig;
+    /// use resilient_rs::strategies::RetryStrategy;
+    /// let config : RetryConfig<()> = RetryConfig::new(3, Duration::from_secs(1), RetryStrategy::Linear);
     /// ```
     pub fn new(max_attempts: usize, delay: Duration, strategy: RetryStrategy) -> Self {
         RetryConfig {
@@ -107,7 +108,8 @@ impl<E> RetryConfig<E> {
     /// # Examples
     /// ```
     /// use std::time::Duration;
-    /// use resilient_rs::config::{RetryConfig, RetryStrategy};
+    /// use resilient_rs::config::RetryConfig;
+    /// use resilient_rs::strategies::RetryStrategy;
     /// let config = RetryConfig::new(3, Duration::from_secs(1), RetryStrategy::Linear)
     ///     .with_retry_condition(|e: &String| e.contains("transient"));
     /// ```
@@ -131,8 +133,9 @@ impl<E> RetryConfig<E> {
     /// # Examples
     /// ```
     /// use std::time::Duration;
-    /// use resilient_rs::config::{RetryConfig, RetryStrategy};
-    /// let config = RetryConfig::default()
+    /// use resilient_rs::config::RetryConfig;
+    /// use resilient_rs::strategies::RetryStrategy;
+    /// let config : RetryConfig<()> = RetryConfig::default()
     ///     .with_strategy(RetryStrategy::ExponentialBackoff);
     /// ```
     pub fn with_strategy(mut self, strategy: RetryStrategy) -> Self {
