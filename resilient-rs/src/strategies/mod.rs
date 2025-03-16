@@ -98,4 +98,32 @@ mod tests {
         assert_eq!(expo.calculate_delay(base_delay, 3), Duration::from_secs(8)); // Third retry: 2^2 * 2s
         assert_eq!(expo.calculate_delay(base_delay, 4), Duration::from_secs(16)); // Fourth retry: 2^3 * 2s
     }
+
+    #[test]
+    fn test_exponential_backoff_strategy_mill() {
+        let base_delay = Duration::from_millis(2000); // Start from 2000ms (2s)
+        let expo = RetryStrategy::ExponentialBackoff;
+
+        // Test that ExponentialBackoff increases delay exponentially (milliseconds)
+        assert_eq!(
+            expo.calculate_delay(base_delay, 0),
+            Duration::from_millis(2000)
+        ); // Initial attempt
+        assert_eq!(
+            expo.calculate_delay(base_delay, 1),
+            Duration::from_millis(2000)
+        ); // 2^0 * 2000ms
+        assert_eq!(
+            expo.calculate_delay(base_delay, 2),
+            Duration::from_millis(4000)
+        ); // 2^1 * 2000ms
+        assert_eq!(
+            expo.calculate_delay(base_delay, 3),
+            Duration::from_millis(8000)
+        ); // 2^2 * 2000ms
+        assert_eq!(
+            expo.calculate_delay(base_delay, 4),
+            Duration::from_millis(16000)
+        ); // 2^3 * 2000ms
+    }
 }
