@@ -156,15 +156,15 @@ mod tests {
 
     #[test]
     fn test_fibonacci_backoff_strategy() {
-        let base_delay = Duration::from_secs(2);
+        let base_delay = Duration::from_secs(1);
         let fib = RetryStrategy::FibonacciBackoff;
 
-        assert_eq!(fib.calculate_delay(base_delay, 0), Duration::from_secs(2));
-        assert_eq!(fib.calculate_delay(base_delay, 1), Duration::from_secs(2));
-        assert_eq!(fib.calculate_delay(base_delay, 2), Duration::from_secs(4));
-        assert_eq!(fib.calculate_delay(base_delay, 3), Duration::from_secs(6));
-        assert_eq!(fib.calculate_delay(base_delay, 4), Duration::from_secs(10));
-        assert_eq!(fib.calculate_delay(base_delay, 5), Duration::from_secs(16));
+        assert_eq!(fib.calculate_delay(base_delay, 0), Duration::from_secs(1));
+        assert_eq!(fib.calculate_delay(base_delay, 1), Duration::from_secs(1));
+        assert_eq!(fib.calculate_delay(base_delay, 2), Duration::from_secs(2));
+        assert_eq!(fib.calculate_delay(base_delay, 3), Duration::from_secs(3));
+        assert_eq!(fib.calculate_delay(base_delay, 4), Duration::from_secs(5));
+        assert_eq!(fib.calculate_delay(base_delay, 5), Duration::from_secs(8));
     }
 
     #[test]
