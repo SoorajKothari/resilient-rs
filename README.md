@@ -21,7 +21,7 @@ Here’s a snapshot of what this library brings to the table—resilience, relia
 
 | **Feature**          | **Details**                                                                                       | **Status**          |
 |----------------------|---------------------------------------------------------------------------------------------------|---------------------|
-| **🔄 Retry**         | Strategies:<br/>1. Linear<br/>2. Exponential Backoff<br/>3. Fibonacci Backoff<br/>All strategies support fallback and custom retry conditions | ✅ **Stable**       |
+| **🔄 Retry**         | Strategies:<br/>1. Linear<br/>2. Exponential Backoff<br/>3. Fibonacci Backoff<br/>All strategies support custom retry conditions | ✅ **Stable**       |
 | **⚡ Execute**       | Execute operations with timeout and fallback—like a pro                                           | ✅ **Stable**       |
 | **🧵 Parallel Exec** | Concurrent task execution with configurable limits                                                | 🛠️ **Planned**     |
 | **🛡️ Circuit Breaker** | Prevents cascading failures by halting operations when thresholds are breached                  | ⚠️ **Thread Unsafe** |
