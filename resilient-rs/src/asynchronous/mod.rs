@@ -66,10 +66,11 @@ where
                 let should_retry = retry_config.retry_condition.map_or(true, |f| f(&err));
                 if should_retry {
                     warn!(
-                        "Operation failed (attempt {}/{}), retrying after {:?}...",
+                        "Operation failed (attempt {}/{}), retrying after {:?} with {:?} strategy...",
                         attempts + 1,
                         retry_config.max_attempts,
-                        delay
+                        delay,
+                        retry_config.strategy
                     );
                     sleep(delay).await;
                     delay = retry_config.strategy.calculate_delay(delay, attempts + 1);

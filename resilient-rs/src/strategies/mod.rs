@@ -13,8 +13,22 @@ pub enum RetryStrategy {
     ///
     /// For example, with a base delay of 2 seconds, retries might wait 2s, 4s, 8s, etc.
     ExponentialBackoff,
+    /// A Fibonacci backoff strategy where the delay between retries follows the Fibonacci sequence.
+    ///
+    /// In this strategy, each delay is the sum of the two preceding delays, typically starting with
+    /// a base unit (e.g., 1 second). For example, if the base delay is 1 second, the retry delays
+    /// would be 1s, 1s, 2s, 3s, 5s, 8s, 13s, etc. This provides a gentler increase compared to
+    /// exponential backoff, balancing retry frequency and resource usage.
+    ///
+    /// ### Example
+    /// - Retry 1: 1 second
+    /// - Retry 2: 1 second
+    /// - Retry 3: 2 seconds
+    /// - Retry 4: 3 seconds
+    /// - Retry 5: 5 seconds
+    /// - And so on...
+    FibonacciBackoff,
 }
-
 /// Configuration for retrying operations.
 ///
 /// This struct defines the parameters for retrying an operation, including
@@ -24,11 +38,15 @@ impl RetryStrategy {
     /// Calculates the delay duration for a specific retry attempt based on the retry strategy.
     ///
     /// This method determines how long to wait before the next retry attempt, using the provided
-    /// `base_delay` as a starting point. The actual delay depends on the `RetryStrategy` variant:
-    /// - For `Linear`, the delay is constant and equal to `base_delay` for all attempts.
-    /// - For `ExponentialBackoff`, the delay increases exponentially as `base_delay * 2^(attempt-1)`,
-    ///   with the first retry (attempt = 1) using the `base_delay` directly.
-    ///
+    /// `base_delay` as a foundation. The actual delay varies by `RetryStrategy` variant:
+    /// - `Linear`: The delay remains constant at `base_delay` for all attempts.
+    /// - `ExponentialBackoff`: The delay increases exponentially as `base_delay * 2^(attempt-1)`
+    ///   starting from the first retry (attempt = 1), with the initial attempt (attempt = 0) using
+    ///   `base_delay` directly.
+    /// - `FibonacciBackoff`: The delay follows a Fibonacci sequence scaled by `base_delay`, where
+    ///   each delay is the sum of the two previous delays, starting with `base_delay` for the first
+    ///   two attempts (attempts 0 and 1), then growing as `2 * base_delay`, `3 * base_delay`,
+    ///   `5 * base_delay`, and so on.
     /// # Arguments
     /// * `base_delay` - The base duration to use as the starting point for delay calculations.
     ///                  This is typically provided by a configuration like `RetryConfig`.
@@ -38,11 +56,6 @@ impl RetryStrategy {
     ///
     /// # Returns
     /// A `Duration` representing the time to wait before the next retry attempt.
-    ///
-    /// # Notes
-    /// - For `ExponentialBackoff`, the delay grows as a power of 2 based on the attempt number.
-    ///   Be cautious with large `attempt` values, as the result could exceed `Duration` limits.
-    /// - The `attempt` parameter is assumed to be non-negative; negative values are not handled.
     pub(crate) fn calculate_delay(&self, base_delay: Duration, attempt: usize) -> Duration {
         match self {
             RetryStrategy::Linear => base_delay,
@@ -51,6 +64,20 @@ impl RetryStrategy {
                     base_delay
                 } else {
                     base_delay * 2u32.pow((attempt - 1) as u32)
+                }
+            }
+            RetryStrategy::FibonacciBackoff => {
+                if attempt < 2 {
+                    base_delay
+                } else {
+                    let mut prev = base_delay;
+                    let mut curr = base_delay;
+                    for _ in 2..=attempt {
+                        let next = prev + curr;
+                        prev = curr;
+                        curr = next;
+                    }
+                    curr
                 }
             }
         }
@@ -92,11 +119,11 @@ mod tests {
         let expo = RetryStrategy::ExponentialBackoff;
 
         // Test that ExponentialBackoff increases delay exponentially
-        assert_eq!(expo.calculate_delay(base_delay, 0), Duration::from_secs(2)); // Initial attempt
-        assert_eq!(expo.calculate_delay(base_delay, 1), Duration::from_secs(2)); // First retry: 2^0 * 2s
-        assert_eq!(expo.calculate_delay(base_delay, 2), Duration::from_secs(4)); // Second retry: 2^1 * 2s
-        assert_eq!(expo.calculate_delay(base_delay, 3), Duration::from_secs(8)); // Third retry: 2^2 * 2s
-        assert_eq!(expo.calculate_delay(base_delay, 4), Duration::from_secs(16)); // Fourth retry: 2^3 * 2s
+        assert_eq!(expo.calculate_delay(base_delay, 0), Duration::from_secs(2));
+        assert_eq!(expo.calculate_delay(base_delay, 1), Duration::from_secs(2));
+        assert_eq!(expo.calculate_delay(base_delay, 2), Duration::from_secs(4));
+        assert_eq!(expo.calculate_delay(base_delay, 3), Duration::from_secs(8));
+        assert_eq!(expo.calculate_delay(base_delay, 4), Duration::from_secs(16));
     }
 
     #[test]
@@ -125,5 +152,49 @@ mod tests {
             expo.calculate_delay(base_delay, 4),
             Duration::from_millis(16000)
         ); // 2^3 * 2000ms
+    }
+
+    #[test]
+    fn test_fibonacci_backoff_strategy() {
+        let base_delay = Duration::from_secs(2);
+        let fib = RetryStrategy::FibonacciBackoff;
+
+        assert_eq!(fib.calculate_delay(base_delay, 0), Duration::from_secs(2));
+        assert_eq!(fib.calculate_delay(base_delay, 1), Duration::from_secs(2));
+        assert_eq!(fib.calculate_delay(base_delay, 2), Duration::from_secs(4));
+        assert_eq!(fib.calculate_delay(base_delay, 3), Duration::from_secs(6));
+        assert_eq!(fib.calculate_delay(base_delay, 4), Duration::from_secs(10));
+        assert_eq!(fib.calculate_delay(base_delay, 5), Duration::from_secs(16));
+    }
+
+    #[test]
+    fn test_fibonacci_backoff_strategy_millis() {
+        let base_delay = Duration::from_millis(2000); // 2000ms = 2s
+        let fib = RetryStrategy::FibonacciBackoff;
+
+        assert_eq!(
+            fib.calculate_delay(base_delay, 0),
+            Duration::from_millis(2000)
+        ); // 1st: 2000ms
+        assert_eq!(
+            fib.calculate_delay(base_delay, 1),
+            Duration::from_millis(2000)
+        ); // 2nd: 2000ms
+        assert_eq!(
+            fib.calculate_delay(base_delay, 2),
+            Duration::from_millis(4000)
+        ); // 3rd: 4000ms
+        assert_eq!(
+            fib.calculate_delay(base_delay, 3),
+            Duration::from_millis(6000)
+        ); // 4th: 6000ms
+        assert_eq!(
+            fib.calculate_delay(base_delay, 4),
+            Duration::from_millis(10000)
+        ); // 5th: 10000ms
+        assert_eq!(
+            fib.calculate_delay(base_delay, 5),
+            Duration::from_millis(16000)
+        ); // 6th: 16000ms
     }
 }

@@ -24,6 +24,7 @@ pub struct RetryConfig<E> {
     /// This field determines how the `delay` is applied:
     /// - `Linear`: Uses a fixed delay between retries.
     /// - `ExponentialBackoff`: Increases the delay exponentially with each retry.
+    /// - `FibonacciBackoff`: Increases the delay following the Fibonacci sequence with each retry.
     pub strategy: RetryStrategy,
 
     /// An optional function to determine if a retry should be attempted.
