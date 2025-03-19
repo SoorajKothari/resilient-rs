@@ -19,15 +19,15 @@
 
 Here’s a snapshot of what this library brings to the table—resilience, reliability, and a sprinkle of magic! Check out the features, their details, and where they stand:
 
-| **Feature**          | **Details**                                                                                       | **Status**          |
-|----------------------|---------------------------------------------------------------------------------------------------|---------------------|
-| **🔄 Retry**         | Strategies:<br/>1. Linear<br/>2. Exponential Backoff<br/>3. Fibonacci Backoff<br/>All strategies support custom retry conditions | ✅ **Stable**       |
-| **⚡ Execute**       | Execute operations with timeout and fallback—like a pro                                           | ✅ **Stable**       |
-| **🧵 Parallel Exec** | Concurrent task execution with configurable limits                                                | 🛠️ **Planned**     |
-| **🛡️ Circuit Breaker** | Prevents cascading failures by halting operations when thresholds are breached                  | ⚠️ **Thread Unsafe** |
-| **📦 Memoize**       | Future caching support for improved performance                                                  | 🛠️ **Planned**     |
-| **📜 Logging**       | Comprehensive logging for debugging—like a detective                                              | ✅ **Stable**       |
-| **📚 More Examples** | Additional demos to inspire and illustrate usage                                                  | 🛠️ **Planned**     |
+| **Feature**           | **Details**                                                                                                                                                      | **Status**          |
+|----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------|
+| **🔄 Retry**         | 🚀 Strategies:<br/>   1️⃣ **Linear**<br/>   2️⃣ **Exponential Backoff**<br/>   3️⃣ **Fibonacci Backoff**<br/>   4️⃣ **Arithmetic Progression**<br/>   🔧 Supports **custom retry conditions** | ✅ **Stable**       |
+| **⚡ Execute**       | ⏳ **Execute operations with timeout and fallback**—like a pro 💪                                                                                                 | ✅ **Stable**       |
+| **🧵 Parallel Exec** | ⚙️ **Concurrent task execution** with configurable limits 🚀                                                                                                      | 🛠️ **Planned**     |
+| **🛡️ Circuit Breaker** | 🔥 **Prevents cascading failures** by halting operations when thresholds are breached 🚧                                                                         | ⚠️ **Thread Unsafe** |
+| **📦 Memoize**       | 💾 **Future caching support** for improved performance 🚀                                                                                                         | 🛠️ **Planned**     |
+| **📜 Logging**       | 🕵️ **Comprehensive logging** for debugging—like a detective 🔍                                                                                                   | ✅ **Stable**       |
+| **📚 More Examples** | 📖 **Additional demos** to inspire and illustrate usage ✨                                                                                                        | 🛠️ **Planned**     |
 
 
 ### Notes:
@@ -52,7 +52,7 @@ Add the following line to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-resilient-rs = "0.4.8" # Replace with the latest version
+resilient-rs = "0.4.9" # Replace with the latest version
 ```
 OR
 ```bash
