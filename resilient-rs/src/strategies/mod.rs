@@ -28,6 +28,14 @@ pub enum RetryStrategy {
     /// - Retry 5: 5 seconds
     /// - And so on...
     FibonacciBackoff,
+    /// An arithmetic progression strategy where the delay increases linearly based on a coefficient.
+    ///
+    /// For example, with a coefficient of 3 and a base delay of 1s:
+    /// - Retry 1: 3s
+    /// - Retry 2: 6s
+    /// - Retry 3: 9s
+    /// - And so on...
+    ArithmeticProgression { coefficient: usize },
 }
 /// Configuration for retrying operations.
 ///
@@ -37,22 +45,9 @@ pub enum RetryStrategy {
 impl RetryStrategy {
     /// Calculates the delay duration for a specific retry attempt based on the retry strategy.
     ///
-    /// This method determines how long to wait before the next retry attempt, using the provided
-    /// `base_delay` as a foundation. The actual delay varies by `RetryStrategy` variant:
-    /// - `Linear`: The delay remains constant at `base_delay` for all attempts.
-    /// - `ExponentialBackoff`: The delay increases exponentially as `base_delay * 2^(attempt-1)`
-    ///   starting from the first retry (attempt = 1), with the initial attempt (attempt = 0) using
-    ///   `base_delay` directly.
-    /// - `FibonacciBackoff`: The delay follows a Fibonacci sequence scaled by `base_delay`, where
-    ///   each delay is the sum of the two previous delays, starting with `base_delay` for the first
-    ///   two attempts (attempts 0 and 1), then growing as `2 * base_delay`, `3 * base_delay`,
-    ///   `5 * base_delay`, and so on.
     /// # Arguments
     /// * `base_delay` - The base duration to use as the starting point for delay calculations.
-    ///                  This is typically provided by a configuration like `RetryConfig`.
-    /// * `attempt` - The current attempt number, where:
-    ///               - `0` represents the initial attempt (though typically retries start at 1).
-    ///               - `1` represents the first retry, `2` the second retry, and so on.
+    /// * `attempt` - The current attempt number (1-based index for retries).
     ///
     /// # Returns
     /// A `Duration` representing the time to wait before the next retry attempt.
@@ -79,6 +74,9 @@ impl RetryStrategy {
                     }
                     curr
                 }
+            }
+            RetryStrategy::ArithmeticProgression { coefficient } => {
+                base_delay * (*coefficient as u32 * attempt as u32)
             }
         }
     }
@@ -156,15 +154,15 @@ mod tests {
 
     #[test]
     fn test_fibonacci_backoff_strategy() {
-        let base_delay = Duration::from_secs(2);
+        let base_delay = Duration::from_secs(1);
         let fib = RetryStrategy::FibonacciBackoff;
 
-        assert_eq!(fib.calculate_delay(base_delay, 0), Duration::from_secs(2));
-        assert_eq!(fib.calculate_delay(base_delay, 1), Duration::from_secs(2));
-        assert_eq!(fib.calculate_delay(base_delay, 2), Duration::from_secs(4));
-        assert_eq!(fib.calculate_delay(base_delay, 3), Duration::from_secs(6));
-        assert_eq!(fib.calculate_delay(base_delay, 4), Duration::from_secs(10));
-        assert_eq!(fib.calculate_delay(base_delay, 5), Duration::from_secs(16));
+        assert_eq!(fib.calculate_delay(base_delay, 0), Duration::from_secs(1));
+        assert_eq!(fib.calculate_delay(base_delay, 1), Duration::from_secs(1));
+        assert_eq!(fib.calculate_delay(base_delay, 2), Duration::from_secs(2));
+        assert_eq!(fib.calculate_delay(base_delay, 3), Duration::from_secs(3));
+        assert_eq!(fib.calculate_delay(base_delay, 4), Duration::from_secs(5));
+        assert_eq!(fib.calculate_delay(base_delay, 5), Duration::from_secs(8));
     }
 
     #[test]
@@ -196,5 +194,15 @@ mod tests {
             fib.calculate_delay(base_delay, 5),
             Duration::from_millis(16000)
         ); // 6th: 16000ms
+    }
+
+    #[test]
+    fn test_arithmetic_progression_strategy() {
+        let base_delay = Duration::from_secs(2);
+        let ap = RetryStrategy::ArithmeticProgression { coefficient: 3 };
+
+        assert_eq!(ap.calculate_delay(base_delay, 1), Duration::from_secs(6));
+        assert_eq!(ap.calculate_delay(base_delay, 2), Duration::from_secs(12));
+        assert_eq!(ap.calculate_delay(base_delay, 3), Duration::from_secs(18));
     }
 }
