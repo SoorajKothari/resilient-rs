@@ -35,9 +35,7 @@ pub enum RetryStrategy {
     /// - Retry 2: 6s
     /// - Retry 3: 9s
     /// - And so on...
-    ArithmeticProgression {
-        coefficient : usize
-    }
+    ArithmeticProgression { coefficient: usize },
 }
 /// Configuration for retrying operations.
 ///
@@ -77,7 +75,7 @@ impl RetryStrategy {
                     curr
                 }
             }
-            RetryStrategy::ArithmeticProgression {coefficient} => {
+            RetryStrategy::ArithmeticProgression { coefficient } => {
                 base_delay * (*coefficient as u32 * attempt as u32)
             }
         }
