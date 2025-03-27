@@ -14,20 +14,20 @@
 <i>💖 Loved the work? [Subscribe to my YouTube channel](https://www.youtube.com/@Semicolon10) or consider giving this repository a ⭐ to show your support!</i>
 </div>
 
-
+---
 ## 🚀 Feature Overview
 
 Here’s a snapshot of what this library brings to the table—resilience, reliability, and a sprinkle of magic! Check out the features, their details, and where they stand:
 
-| **Feature**           | **Details**                                                                                                                                                      | **Status**          |
-|----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------|
-| **🔄 Retry**         | 🚀 Strategies:<br/>   1️⃣ **Linear**<br/>   2️⃣ **Exponential Backoff**<br/>   3️⃣ **Fibonacci Backoff**<br/>   4️⃣ **Arithmetic Progression**<br/>   🔧 Supports **custom retry conditions** | ✅ **Stable**       |
-| **⚡ Execute**       | ⏳ **Execute operations with timeout and fallback**—like a pro 💪                                                                                                 | ✅ **Stable**       |
-| **🧵 Parallel Exec** | ⚙️ **Concurrent task execution** with configurable limits 🚀                                                                                                      | 🛠️ **Planned**     |
-| **🛡️ Circuit Breaker** | 🔥 **Prevents cascading failures** by halting operations when thresholds are breached 🚧                                                                         | ⚠️ **Thread Unsafe** |
-| **📦 Memoize**       | 💾 **Future caching support** for improved performance 🚀                                                                                                         | 🛠️ **Planned**     |
-| **📜 Logging**       | 🕵️ **Comprehensive logging** for debugging—like a detective 🔍                                                                                                   | ✅ **Stable**       |
-| **📚 More Examples** | 📖 **Additional demos** to inspire and illustrate usage ✨                                                                                                        | 🛠️ **Planned**     |
+| **Feature**            | **Description**                                                                                                                                                                                                                                                                                       | **Status**           |
+|------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|
+| **🔄 Retry**           | 🚀 Advanced retry strategies:<br/> &nbsp;&nbsp; 1️⃣ **Linear**<br/> &nbsp;&nbsp; 2️⃣ **Exponential Backoff**<br/> &nbsp;&nbsp; 3️⃣ **Exponential Backoff with Jitter**<br/> &nbsp;&nbsp; 4️⃣ **Fibonacci Backoff**<br/> &nbsp;&nbsp; 5️⃣ **Arithmetic Progression**<br/> 🔧 Supports **custom retry conditions** | ✅ **Stable**        |
+| **⚡ Execute**         | ⏳ **Execute operations with timeout and fallback**—like a pro 💪                                                                                                                                                                                                                                      | ✅ **Stable**        |
+| **🧵 Parallel Exec**   | ⚙️ **Run multiple tasks concurrently** with configurable limits 🚀                                                                                                                                                                                                                                    | 🛠️ **Planned**      |
+| **🛡️ Circuit Breaker** | 🔥 **Prevents cascading failures** by halting operations when failure thresholds are breached 🚧                                                                                                                                                                                                      | ⚠️ **Thread Unsafe** |
+| **📦 Memoize**         | 💾 **Future caching support** for improved performance 🚀                                                                                                                                                                                                                                             | 🛠️ **Planned**      |
+| **📜 Logging**         | 🕵️ **Detailed logging** for debugging—like a detective 🔍                                                                                                                                                                                                                                            | ✅ **Stable**        |
+| **📚 More Examples**   | 📖 **Additional demos** to inspire and illustrate usage ✨                                                                                                                                                                                                                                             | 🛠️ **Planned**      |
 
 
 ### Notes:
@@ -41,7 +41,6 @@ This library plays nice with your favorite Rust async runtimes. The `resilient_r
 - **[async-std](https://crates.io/crates/async-std)** - Keep it light with async-std’s sleek runtime
 - **[futures](https://crates.io/crates/futures)** - Stick to the basics with the core futures crate and blocking execution
 
----
 ## 📦 How to Use `resilient-rs`
 
 Here’s a quick example of how to use the `resilient-rs` crate in your Rust project.
@@ -52,7 +51,7 @@ Add the following line to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-resilient-rs = "0.4.9" # Replace with the latest version
+resilient-rs = "0.4.10" # Replace with the latest version
 ```
 OR
 ```bash
